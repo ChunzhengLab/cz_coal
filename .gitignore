@@ -1,3 +1,4 @@
+.DS_Store
 .vscode
 *.root
 *.log
@@ -6,4 +7,6 @@
 *.so
 build/
 bin/
-Test/
+test/
+temp/
+ref/
