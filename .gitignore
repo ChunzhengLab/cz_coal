@@ -1,0 +1,9 @@
+.vscode
+*.root
+*.log
+*.d
+*.o
+*.so
+build/
+bin/
+Test/
