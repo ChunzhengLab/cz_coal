@@ -1,11 +1,12 @@
 #include <queue>
 #include <set>
+#include <random>
 #include <iostream>
+#include <algorithm>
 #include "Coalescence.h"
 #include "DistanceFun.h"
-#include "Par.h"
-#include <random>
 #include "TStopwatch.h"
+#include "Par.h"
 
 bool Coalescence::initialized = false;
 std::map<BaryonCombination, int> Coalescence::baryonLookupTable;
@@ -26,13 +27,15 @@ void Coalescence::Process(std::vector<Parton> const &partons, std::vector<Hadron
 }
 
 void Coalescence::ProcessClassic(std::vector<Parton> const &partons, std::vector<Hadron> &hadrons) {
+  std::cout<<"ProcessClassic: "<<std::endl;
+  std::cout<<"It will take a really long time, suggest parton number < 10"<<std::endl;
   TStopwatch timer;
   timer.Start();
 
   if(par::isDebug) std::cout<<"How many partons in this event for coalescence: "<<partons.size()<<std::endl;
   
   // 将Hadron对象放入优先队列，使用优先队列来排序距离
-  std::priority_queue<Hadron, std::vector<Hadron>, std::greater<>> queHadronCadidates;
+  std::priority_queue<Hadron, std::vector<Hadron>, std::greater<Hadron>> queHadronCadidates;
 
   //计算所有parton之间的空间距离 -> 介子
   int nSerialHadron = 0;
@@ -73,8 +76,8 @@ void Coalescence::ProcessClassic(std::vector<Parton> const &partons, std::vector
       // std::cout << "Distance between parton " << nSerial_0 << " and parton " << nSerial_1 << " is " << d << std::endl;
     }
   }
-  std::cout << "queHadronCadidates size: " << queHadronCadidates.size() << std::endl;
 
+  std::cout << "queHadronCadidates size: " << queHadronCadidates.size() << std::endl;
   timer.Stop();
   if(par::isDebug) std::cout<<"Time for calculating meson distance: "<<timer.RealTime()<<" s"<<std::endl;
   timer.Start();

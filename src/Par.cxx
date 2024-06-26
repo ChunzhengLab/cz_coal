@@ -1,4 +1,5 @@
 #include "Par.h"
+#include <stdexcept>
 
 namespace par {
   bool isDebug = true;

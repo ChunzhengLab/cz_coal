@@ -1,7 +1,8 @@
 cmake_minimum_required(VERSION 3.14)
 project(Coalescence VERSION 1.0 DESCRIPTION "Chunzheng's Coalescence Model for Heavy-ion Collisions")
 
-# 使用 C++20
+# 可使用 C++20, 本地
+# 可使用 C++11, 服务器
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
