@@ -27,6 +27,9 @@ public:
   float X() const { return x; }
   float Y() const { return y; }
   float Z() const { return z; }
+  float Px() const { return px; }
+  float Py() const { return py; }
+  float Pz() const { return pz; }
   float Pt() const { return sqrt(px * px + py * py); }
   float Eta() const { 
     float p = sqrt(px * px + py * py + pz * pz);

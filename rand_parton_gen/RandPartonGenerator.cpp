@@ -40,7 +40,7 @@ int main(int argc , char* argv[]) {
     randPartonsFileName = argv[4];
   }
   else {
-    cerr << "Usage: " << argv[0] << " <nPartonsYouWant> <AMPT parton distribution file> <output file name>" << endl;
+    cerr << "Usage: " << argv[0] << " <nPartonsYouWant> <nEventsType> <amptPartonDistFileName> <randPartonsFileName>" << endl;
     return 1;
   }
 

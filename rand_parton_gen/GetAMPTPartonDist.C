@@ -50,7 +50,7 @@ int BinPDG(int pdg) {
 }
 
 void GetAMPTPartonDist() {
-  TFile* file = new TFile("../zpc-1.root", "READ");
+  TFile* file = new TFile("../test/zpc-1.root", "READ");
   if (!file) {
     std::cerr << "Cannot open file" << std::endl;
     return;

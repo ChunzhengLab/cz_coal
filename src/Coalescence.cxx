@@ -13,6 +13,7 @@ std::map<BaryonCombination, int> Coalescence::baryonLookupTable;
 std::map<MesonCombination, int> Coalescence::mesonLookupTable;
 
 void Coalescence::Process(std::vector<Parton> const &partons, std::vector<Hadron> &hadrons) {
+  nPartonsThisEvent = partons.size();
   switch (coalescenceAlgorithm) {
     case CoalescenceAlgorithm::kClassic:
       ProcessClassic(partons, hadrons);
@@ -189,119 +190,6 @@ int Coalescence::LookupSpecies(int pdg_quark_0, int pdg_quark_1, int pdg_quark_2
   }
 }
 
-void Coalescence::InitMesonLookupTable() {
-  // π介子
-  // π^+ (u, anti-d) -> 211
-  mesonLookupTable[std::make_tuple(-1, 2)] = 211;
-  // π^- (d, anti-u) -> -211
-  mesonLookupTable[std::make_tuple(-2, 1)] = -211;
-  // π^0 (u, anti-u) or (d, anti-d) -> 111
-  mesonLookupTable[std::make_tuple(-2, 2)] = 111;
-  mesonLookupTable[std::make_tuple(-1, 1)] = 111;
-
-  // K介子
-  // K^+ (u, anti-s) -> 321
-  mesonLookupTable[std::make_tuple(-3, 2)] = 321;
-  // K^- (s, anti-u) -> -321
-  mesonLookupTable[std::make_tuple(-2, 3)] = -321;
-  // K^0 (d, anti-s) -> 311
-  mesonLookupTable[std::make_tuple(-3, 1)] = 311;
-  // anti-K^0 (s, anti-d) -> -311
-  mesonLookupTable[std::make_tuple(-1, 3)] = -311;
-
-  // η介子 (暂时注释掉)
-  // η (u, anti-u) or (d, anti-d) or (s, anti-s) -> 221
-  // mesonLookupTable[std::make_tuple(-2, 2)] = 221;
-  // mesonLookupTable[std::make_tuple(-1, 1)] = 221;
-  // mesonLookupTable[std::make_tuple(-3, 3)] = 221;
-
-  // ρ介子 (暂时注释掉)
-  // ρ^+ (u, anti-d) -> 213
-  // mesonLookupTable[std::make_tuple(-1, 2)] = 213;
-  // ρ^- (d, anti-u) -> -213
-  // mesonLookupTable[std::make_tuple(-2, 1)] = -213;
-  // ρ^0 (u, anti-u) or (d, anti-d) -> 113
-  // mesonLookupTable[std::make_tuple(-2, 2)] = 113;
-  // mesonLookupTable[std::make_tuple(-1, 1)] = 113;
-
-  // φ介子
-  // φ (s, anti-s) -> 333
-  mesonLookupTable[std::make_tuple(-3, 3)] = 333;
-
-  // J/ψ介子
-  // J/ψ (c, anti-c) -> 443
-  mesonLookupTable[std::make_tuple(-4, 4)] = 443;
-
-  // D介子
-  // D^0 (c, anti-u) -> 421
-  mesonLookupTable[std::make_tuple(-2, 4)] = 421;
-  // anti-D^0 (u, anti-c) -> -421
-  mesonLookupTable[std::make_tuple(-4, 2)] = -421;
-  // D^+ (c, anti-d) -> 411
-  mesonLookupTable[std::make_tuple(-1, 4)] = 411;
-  // D^- (d, anti-c) -> -411
-  mesonLookupTable[std::make_tuple(-4, 1)] = -411;
-
-  // B介子
-  // B^0 (d, anti-b) -> 511
-  mesonLookupTable[std::make_tuple(-5, 1)] = 511;
-  // anti-B^0 (b, anti-d) -> -511
-  mesonLookupTable[std::make_tuple(-1, 5)] = -511;
-  // B^+ (u, anti-b) -> 521
-  mesonLookupTable[std::make_tuple(-5, 2)] = 521;
-  // B^- (b, anti-u) -> -521
-  mesonLookupTable[std::make_tuple(-2, 5)] = -521;
-}
-
-void Coalescence::InitBaryonLookupTable() {
-  // 质子 (uud) -> 2212
-  baryonLookupTable[std::make_tuple(1, 2, 2)] = 2212;
-  // 反质子 (anti-u, anti-u, anti-d) -> -2212
-  baryonLookupTable[std::make_tuple(-2, -2, -1)] = -2212;
-
-  // 中子 (udd) -> 2112
-  baryonLookupTable[std::make_tuple(1, 1, 2)] = 2112;
-  // 反中子 (anti-d, anti-d, anti-u) -> -2112
-  baryonLookupTable[std::make_tuple(-2, -1, -1)] = -2112;
-
-  // Λ重子 (uds) -> 3122
-  baryonLookupTable[std::make_tuple(1, 2, 3)] = 3122;
-  // 反Λ重子 (anti-u, anti-d, anti-s) -> -3122
-  baryonLookupTable[std::make_tuple(-3, -2, -1)] = -3122;
-
-  // Σ^+重子 (uus) -> 3222
-  baryonLookupTable[std::make_tuple(2, 2, 3)] = 3222;
-  // 反Σ^+重子 (anti-u, anti-u, anti-s) -> -3222
-  baryonLookupTable[std::make_tuple(-3, -2, -2)] = -3222;
-
-  // // Σ^0重子 (uds) -> 3212 (暂时注释掉)
-  // baryonLookupTable[std::make_tuple(1, 2, 3)] = 3212;
-  // // 反Σ^0重子 (anti-u, anti-d, anti-s) -> -3212
-  // baryonLookupTable[std::make_tuple(-3, -2, -1)] = -3212;
-
-  // Σ^-重子 (dds) -> 3112
-  baryonLookupTable[std::make_tuple(1, 1, 3)] = 3112;
-  // 反Σ^-重子 (anti-d, anti-d, anti-s) -> -3112
-  baryonLookupTable[std::make_tuple(-3, -1, -1)] = -3112;
-
-  // Ξ^0重子 (uss) -> 3322
-  baryonLookupTable[std::make_tuple(2, 3, 3)] = 3322;
-  // 反Ξ^0重子 (anti-u, anti-s, anti-s) -> -3322
-  baryonLookupTable[std::make_tuple(-3, -3, -2)] = -3322;
-
-  // Ξ^-重子 (dss) -> 3312
-  baryonLookupTable[std::make_tuple(1, 3, 3)] = 3312;
-  // 反Ξ^-重子 (anti-d, anti-s, anti-s) -> -3312
-  baryonLookupTable[std::make_tuple(-3, -3, -1)] = -3312;
-
-  // Ω^-重子 (sss) -> 3334
-  baryonLookupTable[std::make_tuple(3, 3, 3)] = 3334;
-  // 反Ω^-重子 (anti-s, anti-s, anti-s) -> -3334
-  baryonLookupTable[std::make_tuple(-3, -3, -3)] = -3334;
-
-  // 其他重子的组合和对应的PDG代码
-}
-
 //pdg_code for a quark
 // u = 2, d = 1, s = 3, c = 4, b = 5, t = 6
 // ubar = -2, dbar = -1, sbar = -3, cbar = -4, bbar = -5, tbar = -6
@@ -353,7 +241,7 @@ int Coalescence::LookupBaryonSpecies(int pdg_quark_0, int pdg_quark_1, int pdg_q
   return 0;
 }
 
-void Coalescence::ProcessFromParton(std::vector<Parton> const &partons0, std::vector<Hadron> &hadrons) {
+void Coalescence::ProcessFromParton(std::vector<Parton> const &partons0, std::vector<Hadron> &hadrons, int nLastHadronSerial) {
   // 这种算法，每次循环必出现一个hadron
   // 随机化parton vector
 
@@ -377,7 +265,7 @@ void Coalescence::ProcessFromParton(std::vector<Parton> const &partons0, std::ve
     }
   }
 
-  int nHadronSerial = 0;
+  int nHadronSerial = nLastHadronSerial;
   for (int iParton = 0; iParton < nPartons; iParton++) {
     if (isThisPartonUsed[iParton]) continue;
     int pdg_quark_0 = pdg_quark[iParton];
@@ -475,13 +363,12 @@ void Coalescence::ProcessFromParton(std::vector<Parton> const &partons0, std::ve
       px_hadron = (px[meson_quark_label[0]] + px[meson_quark_label[1]]) / 2;
       py_hadron = (py[meson_quark_label[0]] + py[meson_quark_label[1]]) / 2;
       pz_hadron = (pz[meson_quark_label[0]] + pz[meson_quark_label[1]]) / 2;
-      //hadrons.emplace_back(iSerial++, pdg_hadron, x_hadron, y_hadron, z_hadron, px_hadron, py_hadron, pz_hadron, dis, meson_quark_label[0], meson_quark_label[1], -1);
-      Hadron hc(nHadronSerial++, pdg_hadron, x_hadron, y_hadron, z_hadron, px_hadron, py_hadron, pz_hadron, dis, partons[meson_quark_label[0]].GetSerial(), partons[meson_quark_label[1]].GetSerial(), -1);
+      hadrons.emplace_back(nHadronSerial++, pdg_hadron, x_hadron, y_hadron, z_hadron, px_hadron, py_hadron, pz_hadron, dis, partons[meson_quark_label[0]].GetSerial(), partons[meson_quark_label[1]].GetSerial(), -1);
       if(par::isDebug) {
-        hc.SetParton0Position(x0, y0, z0);
-        hc.SetParton1Position(x[meson_quark_label[1]], y[meson_quark_label[1]], z[meson_quark_label[1]]);
+        hadrons.back().SetParton0Position(x[meson_quark_label[0]], y[meson_quark_label[0]], z[meson_quark_label[0]]);
+        hadrons.back().SetParton1Position(x[meson_quark_label[1]], y[meson_quark_label[1]], z[meson_quark_label[1]]);
+        hadrons.back().SetParton2Position(-9999, -9999, -9999);
       } 
-      hadrons.emplace_back(hc);
       isThisPartonUsed[meson_quark_label[0]] = true;
       isThisPartonUsed[meson_quark_label[1]] = true;
     } else {
@@ -493,18 +380,266 @@ void Coalescence::ProcessFromParton(std::vector<Parton> const &partons0, std::ve
       px_hadron = (px[baryon_quark_label[0]] + px[baryon_quark_label[1]] + px[baryon_quark_label[2]]) / 3;
       py_hadron = (py[baryon_quark_label[0]] + py[baryon_quark_label[1]] + py[baryon_quark_label[2]]) / 3;
       pz_hadron = (pz[baryon_quark_label[0]] + pz[baryon_quark_label[1]] + pz[baryon_quark_label[2]]) / 3;
-      //hadrons.emplace_back(iSerial++, pdg_hadron, x_hadron, y_hadron, z_hadron, px_hadron, py_hadron, pz_hadron, dis, baryon_quark_label[0], baryon_quark_label[1], baryon_quark_label[2]);
-      Hadron hc(nHadronSerial++, pdg_hadron, x_hadron, y_hadron, z_hadron, px_hadron, py_hadron, pz_hadron, dis, partons[baryon_quark_label[0]].GetSerial(), partons[baryon_quark_label[1]].GetSerial(), partons[baryon_quark_label[2]].GetSerial());
+      hadrons.emplace_back(nHadronSerial++, pdg_hadron, x_hadron, y_hadron, z_hadron, px_hadron, py_hadron, pz_hadron, dis, partons[baryon_quark_label[0]].GetSerial(), partons[baryon_quark_label[1]].GetSerial(), partons[baryon_quark_label[2]].GetSerial());
       if(par::isDebug) {
-        hc.SetParton0Position(x0, y0, z0);
-        hc.SetParton1Position(x[diquark_quark_label[1]], y[diquark_quark_label[1]], z[diquark_quark_label[1]]);
-        hc.SetParton2Position(x[baryon_quark_label[2]], y[baryon_quark_label[2]], z[baryon_quark_label[2]]);
+        hadrons.back().SetParton0Position(x[baryon_quark_label[0]], y[baryon_quark_label[0]], z[baryon_quark_label[0]]);
+        hadrons.back().SetParton1Position(x[baryon_quark_label[1]], y[baryon_quark_label[1]], z[baryon_quark_label[1]]);
+        hadrons.back().SetParton2Position(x[baryon_quark_label[2]], y[baryon_quark_label[2]], z[baryon_quark_label[2]]);
       }
-      hadrons.emplace_back(hc);
       isThisPartonUsed[baryon_quark_label[0]] = true;
       isThisPartonUsed[baryon_quark_label[1]] = true;
       isThisPartonUsed[baryon_quark_label[2]] = true;
     }
   }
+
+  // 如果还有没有被使用的parton，这些parton的数量理论上应该很少
+  // 可以读取isThisPartonUsed数组，找到没有被使用的parton，然后将这些parton打包成一个vector<Parton>
+  // 进行递归
+  std::vector<Parton> partonsUnused;
+  for (int i = 0; i < nPartons; i++) {
+    if (!isThisPartonUsed[i]) {
+      partonsUnused.emplace_back(partons[i]);
+    }
+  }
+  // std::cout<<"Partons left with PDG code: ";
+  // for (auto& p : partonsUnused) {
+  //   std::cout<<p.PDG()<<" ";
+  // }
+  // std::cout<<std::endl;
+
+  bool isNeedRecursion = true;
+  if (nRecursionThisEvent > 5) {
+    // 如果递归超过5次，那么直接结束递归
+    isNeedRecursion = false;
+  } else {
+    if (partonsUnused.size() == 0) {
+      // 如果没有没有被使用的parton，那么递归结束
+      isNeedRecursion = false;
+    } else if (partonsUnused.size() == 1) {
+      // 如果只有一个没有被使用的parton，那么递归结束
+      if(par::isDebug) {
+        std::cout<<"One parton with PDG code: "<<partonsUnused[0].PDG()<<" is left, recursion ends."<<std::endl;
+      }
+      isNeedRecursion = false;
+    } else if (partonsUnused.size() == 2) {
+      // 递归必然结束
+      isNeedRecursion = false;
+      int pdg_lookup = LookupMesonSpecies(partonsUnused[0].PDG(), partonsUnused[1].PDG());
+      // 如果刚好能够形成一个介子，打包成一个介子
+      if(pdg_lookup != 0) {
+        std::cout<<"Two partons left with pdg code: "<<partonsUnused[0].PDG()<<", "<<partonsUnused[1].PDG()<<std::endl;
+        std::cout<<"and with serial: "<<partonsUnused[0].GetSerial()<<", "<<partonsUnused[1].GetSerial()<<std::endl;
+        // 如果有两个没有被使用的parton，而且这两个parton的PDG code同号，那么递归结束
+        float x = (partonsUnused[0].X() + partonsUnused[1].X()) / 2;
+        float y = (partonsUnused[0].Y() + partonsUnused[1].Y()) / 2;
+        float z = (partonsUnused[0].Z() + partonsUnused[1].Z()) / 2;
+        float px = (partonsUnused[0].Px() + partonsUnused[1].Px()) / 2;
+        float py = (partonsUnused[0].Py() + partonsUnused[1].Py()) / 2;
+        float pz = (partonsUnused[0].Pz() + partonsUnused[1].Pz()) / 2;
+        float d = distance3D(partonsUnused[0].X(), partonsUnused[0].Y(), partonsUnused[0].Z(), partonsUnused[1].X(), partonsUnused[1].Y(), partonsUnused[1].Z());
+        hadrons.emplace_back(nHadronSerial++, pdg_lookup, x, y, z, px, py, pz, d, partonsUnused[0].GetSerial(), partonsUnused[1].GetSerial(), -1);
+        if(par::isDebug) {
+          hadrons.back().SetParton0Position(partonsUnused[0].X(), partonsUnused[0].Y(), partonsUnused[0].Z());
+          hadrons.back().SetParton1Position(partonsUnused[1].X(), partonsUnused[1].Y(), partonsUnused[1].Z());
+        }
+        std::cout<<"------These two partons can form a meson: "<<pdg_lookup<<std::endl;
+        partonsUnused.clear();
+        std::cout<<"------Used partons vector cleared."<<std::endl;
+      } else {
+        // 无法形成介子，递归结束
+        std::cout<<"Two partons left with pdg code: "<<partonsUnused[0].PDG()<<", "<<partonsUnused[1].PDG()<<std::endl;
+        std::cout<<"------These two partons cannot form a meson."<<std::endl;
+      }
+    } else if (partonsUnused.size() == 3) {
+      int pdg_lookup = LookupBaryonSpecies(partonsUnused[0].PDG(), partonsUnused[1].PDG(), partonsUnused[2].PDG());
+      if (pdg_lookup != 0) {
+        std::cout<<"Three partons left with pdg code: "<<partonsUnused[0].PDG()<<", "<<partonsUnused[1].PDG()<<", "<<partonsUnused[2].PDG()<<std::endl;
+        std::cout<<"and with serial: "<<partonsUnused[0].GetSerial()<<", "<<partonsUnused[1].GetSerial()<<", "<<partonsUnused[2].GetSerial()<<std::endl;
+        // 可以形成重子，直接打包成一个hadron
+        float x = (partonsUnused[0].X() + partonsUnused[1].X() + partonsUnused[2].X()) / 3;
+        float y = (partonsUnused[0].Y() + partonsUnused[1].Y() + partonsUnused[2].Y()) / 3;
+        float z = (partonsUnused[0].Z() + partonsUnused[1].Z() + partonsUnused[2].Z()) / 3;
+        float px = (partonsUnused[0].Px() + partonsUnused[1].Px() + partonsUnused[2].Px()) / 3;
+        float py = (partonsUnused[0].Py() + partonsUnused[1].Py() + partonsUnused[2].Py()) / 3;
+        float pz = (partonsUnused[0].Pz() + partonsUnused[1].Pz() + partonsUnused[2].Pz()) / 3;
+        float d = minDistanceTLikeStructure(partonsUnused[0].X(), partonsUnused[0].Y(), partonsUnused[0].Z(), partonsUnused[1].X(), partonsUnused[1].Y(), partonsUnused[1].Z(), partonsUnused[2].X(), partonsUnused[2].Y(), partonsUnused[2].Z());
+        hadrons.emplace_back(nHadronSerial++, pdg_lookup, x, y, z, px, py, pz, d, partonsUnused[0].GetSerial(), partonsUnused[1].GetSerial(), partonsUnused[2].GetSerial());
+        if(par::isDebug) {
+          hadrons.back().SetParton0Position(partonsUnused[0].X(), partonsUnused[0].Y(), partonsUnused[0].Z());
+          hadrons.back().SetParton1Position(partonsUnused[1].X(), partonsUnused[1].Y(), partonsUnused[1].Z());
+          hadrons.back().SetParton2Position(partonsUnused[2].X(), partonsUnused[2].Y(), partonsUnused[2].Z());
+        }
+        std::cout<<"------These three partons can form a baryon: "<<pdg_lookup<<std::endl;
+        partonsUnused.clear();
+        std::cout<<"------Used partons vector cleared."<<std::endl;
+        isNeedRecursion = false;
+      }
+    } else {
+      // 其他情况，需要递归
+      isNeedRecursion = true;
+    }
+  }
+
+  std::cout<<"Left partons: "<<std::endl;
+  for (auto& p : partonsUnused) {
+    std::cout<<"Parton Serial: "<<p.GetSerial()<<", PDG code: "<<p.PDG()<<std::endl;
+  }
+
+  // 递归
+  if (isNeedRecursion) {
+    nRecursionThisEvent++;
+    if(par::isDebug) {
+      std::cout<<"Recursion "<<nRecursionThisEvent<<" starts."<<std::endl;
+    }
+    ProcessFromParton(partonsUnused, hadrons, nHadronSerial);
+  } else {
+    if(par::isDebug) {
+      std::cout<<"----------------------------------------"<<std::endl;
+      std::cout<<"Recursion ends."<<std::endl;
+      std::cout<<"Number of recursion in this event: "<<nRecursionThisEvent<<std::endl;
+      std::cout<<"----------------------------------------"<<std::endl;
+    }
+    // 如果最终partonsUnused大于0，说明递归结束后还有一些parton没有被使用
+    // FIXME：如果没有被使用的parton数量大于总parton数量的20%，那么应该报错，直接清零hadrons数组
+    if (partonsUnused.size() > 0) {
+      if (partonsUnused.size() > 0.2 * nPartonsThisEvent) {
+        std::cerr<<"Error: "<<partonsUnused.size()<<" partons are left unused after recursion, which is more than 20% of the total partons."<<std::endl;
+        std::cerr<<"Clearing hadrons array."<<std::endl;
+        std::vector<Hadron>().swap(hadrons);
+      } else {
+        std::cout<<"Warning: "<<partonsUnused.size()<<" partons are left unused after recursion."<<std::endl;
+      }
+    }
+    // 递归结束, 重置递归次数为了下一个事件
+    nRecursionThisEvent = 0;
+  }
 }
 
+
+void Coalescence::InitMesonLookupTable() {
+  // π介子
+  // π^+ (u, anti-d) -> 211
+  mesonLookupTable[std::make_tuple(-1, 2)] = 211;
+  // π^- (d, anti-u) -> -211
+  mesonLookupTable[std::make_tuple(-2, 1)] = -211;
+  // π^0 (u, anti-u) or (d, anti-d) -> 111
+  mesonLookupTable[std::make_tuple(-2, 2)] = 111;
+  mesonLookupTable[std::make_tuple(-1, 1)] = 111;
+
+  // K介子
+  // K^+ (u, anti-s) -> 321
+  mesonLookupTable[std::make_tuple(-3, 2)] = 321;
+  // K^- (s, anti-u) -> -321
+  mesonLookupTable[std::make_tuple(-2, 3)] = -321;
+  // K^0 (d, anti-s) -> 311
+  mesonLookupTable[std::make_tuple(-3, 1)] = 311;
+  // anti-K^0 (s, anti-d) -> -311
+  mesonLookupTable[std::make_tuple(-1, 3)] = -311;
+
+  // η介子 (暂时注释掉)
+  // η (u, anti-u) or (d, anti-d) or (s, anti-s) -> 221
+  // mesonLookupTable[std::make_tuple(-2, 2)] = 221;
+  // mesonLookupTable[std::make_tuple(-1, 1)] = 221;
+  // mesonLookupTable[std::make_tuple(-3, 3)] = 221;
+
+  // ρ介子 (暂时注释掉)
+  // ρ^+ (u, anti-d) -> 213
+  // mesonLookupTable[std::make_tuple(-1, 2)] = 213;
+  // ρ^- (d, anti-u) -> -213
+  // mesonLookupTable[std::make_tuple(-2, 1)] = -213;
+  // ρ^0 (u, anti-u) or (d, anti-d) -> 113
+  // mesonLookupTable[std::make_tuple(-2, 2)] = 113;
+  // mesonLookupTable[std::make_tuple(-1, 1)] = 113;
+
+  // φ介子
+  // φ (s, anti-s) -> 333
+  mesonLookupTable[std::make_tuple(-3, 3)] = 333;
+
+  // J/ψ介子
+  // J/ψ (c, anti-c) -> 443
+  mesonLookupTable[std::make_tuple(-4, 4)] = 443;
+
+  // D介子
+  // D^0 (c, anti-u) -> 421
+  mesonLookupTable[std::make_tuple(-2, 4)] = 421;
+  // anti-D^0 (u, anti-c) -> -421
+  mesonLookupTable[std::make_tuple(-4, 2)] = -421;
+  // D^+ (c, anti-d) -> 411
+  mesonLookupTable[std::make_tuple(-1, 4)] = 411;
+  // D^- (d, anti-c) -> -411
+  mesonLookupTable[std::make_tuple(-4, 1)] = -411;
+
+  // B介子
+  // B^0 (d, anti-b) -> 511
+  mesonLookupTable[std::make_tuple(-5, 1)] = 511;
+  // anti-B^0 (b, anti-d) -> -511
+  mesonLookupTable[std::make_tuple(-1, 5)] = -511;
+  // B^+ (u, anti-b) -> 521
+  mesonLookupTable[std::make_tuple(-5, 2)] = 521;
+  // B^- (b, anti-u) -> -521
+  mesonLookupTable[std::make_tuple(-2, 5)] = -521;
+}
+
+void Coalescence::InitBaryonLookupTable() {
+  // N重子
+  // 质子 (uud) -> 2212
+  baryonLookupTable[std::make_tuple(1, 2, 2)] = 2212;
+  // 反质子 (anti-u, anti-u, anti-d) -> -2212
+  baryonLookupTable[std::make_tuple(-2, -2, -1)] = -2212;
+  // 中子 (udd) -> 2112
+  baryonLookupTable[std::make_tuple(1, 1, 2)] = 2112;
+  // 反中子 (anti-d, anti-d, anti-u) -> -2112
+  baryonLookupTable[std::make_tuple(-2, -1, -1)] = -2112;
+  
+  // Δ重子
+  // Δ^++ (uuu) -> 2224
+  baryonLookupTable[std::make_tuple(2, 2, 2)] = 2224;
+  // 反Δ^++ (anti-u, anti-u, anti-u) -> -2224
+  baryonLookupTable[std::make_tuple(-2, -2, -2)] = -2224;
+  // // Δ^+ (uud) -> 2214 // 组分与质子相同，暂时注释掉
+  // baryonLookupTable[std::make_tuple(1, 2, 2)] = 2214;
+  // // Δ^0 (udd) -> 2114 // 组分与中子相同，暂时注释掉
+  // baryonLookupTable[std::make_tuple(1, 1, 2)] = 2114;
+  // Δ^- (ddd) -> 1114
+  baryonLookupTable[std::make_tuple(1, 1, 1)] = 1114;
+  // 反Δ^- (anti-d, anti-d, anti-d) -> -1114
+  baryonLookupTable[std::make_tuple(-1, -1, -1)] = -1114;
+
+  // Λ重子
+  // Λ0 (uds) -> 3122
+  baryonLookupTable[std::make_tuple(1, 2, 3)] = 3122;
+  // 反Λ0 (anti-u, anti-d, anti-s) -> -3122
+  baryonLookupTable[std::make_tuple(-3, -2, -1)] = -3122;
+
+  // Σ 重子
+  // Σ^+重子 (uus) -> 3222
+  baryonLookupTable[std::make_tuple(2, 2, 3)] = 3222;
+  // 反Σ^+重子 (anti-u, anti-u, anti-s) -> -3222
+  baryonLookupTable[std::make_tuple(-3, -2, -2)] = -3222;
+  // // Σ^0重子 (uds) -> 3212 // 组分与Λ相同，暂时注释掉
+  // baryonLookupTable[std::make_tuple(1, 2, 3)] = 3212;
+  // // 反Σ^0重子 (anti-u, anti-d, anti-s) -> -3212 // 组分与反Λ相同，暂时注释掉
+  // baryonLookupTable[std::make_tuple(-3, -2, -1)] = -3212;
+  // Σ^-重子 (dds) -> 3112
+  baryonLookupTable[std::make_tuple(1, 1, 3)] = 3112;
+  // 反Σ^-重子 (anti-d, anti-d, anti-s) -> -3112
+  baryonLookupTable[std::make_tuple(-3, -1, -1)] = -3112;
+   
+  // Ξ重子
+  // Ξ^0重子 (uss) -> 3322
+  baryonLookupTable[std::make_tuple(2, 3, 3)] = 3322;
+  // 反Ξ^0重子 (anti-u, anti-s, anti-s) -> -3322
+  baryonLookupTable[std::make_tuple(-3, -3, -2)] = -3322;
+  // Ξ^-重子 (dss) -> 3312
+  baryonLookupTable[std::make_tuple(1, 3, 3)] = 3312;
+  // 反Ξ^-重子 (anti-d, anti-s, anti-s) -> -3312
+  baryonLookupTable[std::make_tuple(-3, -3, -1)] = -3312;
+  
+  // Ω重子
+  // Ω^-重子 (sss) -> 3334
+  baryonLookupTable[std::make_tuple(3, 3, 3)] = 3334;
+  // 反Ω^-重子 (anti-s, anti-s, anti-s) -> -3334
+  baryonLookupTable[std::make_tuple(-3, -3, -3)] = -3334;
+
+  // 其他重子的组合和对应的PDG代码
+}

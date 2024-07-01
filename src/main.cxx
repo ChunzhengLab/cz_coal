@@ -69,6 +69,9 @@ int main(int argc, char** argv) {
     // 执行Coalescence
     std::vector<Hadron> hadrons;
     coalescence.Process(partonEvent.GetParticles(), hadrons);
+    if (par::isDebug) {
+      std::cout << "Hadrons after coalescence: " << hadrons.size() << std::endl;
+    }
 
     //执行观测量计算
     if(par::isCalculateObvs) {
@@ -79,13 +82,20 @@ int main(int argc, char** argv) {
     if(par::isWriteEvents) {
       writer.WriteEvent(Event<Hadron>(iEvent + 1, hadrons.size(), std::move(hadrons)));
     }
+    
+    std::cout << "Event " << iEvent << " processed" << std::endl;
+    std::cout <<"============xxxxxxxxxxxxxxxx=============="<< std::endl;
+    std::cout << std::endl;
+    std::cout << std::endl;
+    std::cout << std::endl;
+    std::cout << std::endl;
+    std::cout << std::endl;
   }
   std::cout << "All events processed" << std::endl;
 
   return 0;
 }
 
-// TODO 5. 支持在集群上运行
 
 // 考虑是否要将最后剩下的quark进行一次尝试聚合，如果聚合成功，那么就将其加入到hadrons中，否则就不加入。但是目前似乎没有那么紧张
 

@@ -17,7 +17,9 @@ class Coalescence {
   static bool initialized;
   CoalescenceAlgorithm coalescenceAlgorithm;
   float r_bm;
-
+  //递归次数
+  int nRecursionThisEvent = 0;
+  int nPartonsThisEvent = 0;
   // 重子信息的查找表
   static std::map<BaryonCombination, int> baryonLookupTable;
   // 介子信息的查找表
@@ -32,13 +34,14 @@ class Coalescence {
   }
   bool IsInitialized() const { return initialized; }
   void Process(std::vector<Parton> const &partons, std::vector<Hadron> &hadrons);
-  void ProcessFromParton(std::vector<Parton> const &partons0, std::vector<Hadron> &hadrons);
+  void ProcessFromParton(std::vector<Parton> const &partons0, std::vector<Hadron> &hadrons, int nLastHadronSerial = 0);
   void ProcessClassic(std::vector<Parton> const &partons, std::vector<Hadron> &hadrons);
   int LookupSpecies(int pdg_quark_0, int pdg_quark_1, int pdg_quark_2);
   int LookupMesonSpecies(int pdg_quark_0, int pdg_quark_1);
   int LookupBaryonSpecies(int pdg_quark_0, int pdg_quark_1, int pdg_quark_2);
   void InitBaryonLookupTable();
   void InitMesonLookupTable();
+  void ResetRecursionForThisEvent() { nRecursionThisEvent = 0; }
   void Print() const {
     std::cout << "--------------------------" << std::endl;
     std::cout << "Coalescence:" << std::endl;

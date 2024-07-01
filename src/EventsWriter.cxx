@@ -32,6 +32,9 @@ void EventsWriter::Event2HadronEventStruct(const Event<Hadron>& event) {
       hadronEventStruct.quark1_y.emplace_back(y);
       hadronEventStruct.quark1_z.emplace_back(z);
       particle.GetParton2Position(x, y, z);
+      hadronEventStruct.quark2_x.emplace_back(x);
+      hadronEventStruct.quark2_y.emplace_back(y);
+      hadronEventStruct.quark2_z.emplace_back(z);
     }
   }
 }

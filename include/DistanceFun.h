@@ -96,3 +96,23 @@ float sumDistanceToFermatPoint(float x1, float y1, float z1, float x2, float y2,
   fermatPoint(x1, y1, z1, x2, y2, z2, x3, y3, z3, x, y, z);
   return distance3D(x1, y1, z1, x, y, z) + distance3D(x2, y2, z2, x, y, z) + distance3D(x3, y3, z3, x, y, z);
 }
+
+
+float minDistanceTLikeStructure(float x1, float y1, float z1, float x2, float y2, float z2, float x3, float y3, float z3) {
+
+  float d1, d2, d3;
+  d1 = distance3D(x1, y1, z1, x2, y2, z2);
+  d1 += distance3D((x1 + x2)/2, (y1 + y2)/2, (z1 + z2)/2, x3, y3, z3);
+  d2 = distance3D(x1, y1, z1, x3, y3, z3);
+  d2 += distance3D((x1 + x3)/2, (y1 + y3)/2, (z1 + z3)/2, x2, y2, z2);
+  d3 = distance3D(x2, y2, z2, x3, y3, z3);
+  d3 += distance3D((x2 + x3)/2, (y2 + y3)/2, (z2 + z3)/2, x1, y1, z1);
+
+  if (d1 < d2 && d1 < d3) {
+    return d1;
+  } else if (d2 < d1 && d2 < d3) {
+    return d2;
+  } else {
+    return d3;
+  }
+}
