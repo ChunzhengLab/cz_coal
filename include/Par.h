@@ -25,6 +25,7 @@ namespace par {
   extern EventType eventType;
   //r_bm的默认值
   extern float r_bm;
+  extern float flavourBreakTolerance;
   //聚合算法
   extern CoalescenceAlgorithm coalescenceAlgorithm;
   extern std::string inputFile;

@@ -17,6 +17,7 @@ namespace par {
   CoalescenceAlgorithm coalescenceAlgorithm = CoalescenceAlgorithm::kFromParton;
   //r_bm的默认值
   float r_bm = 1.0;
+  float flavourBreakTolerance = 0.;
 
   //维护一个全局的随机数生成器
   std::random_device rd;
@@ -51,6 +52,7 @@ void parseConfig(const std::string& line) {
       else throw std::runtime_error("Unknown event type: " + value);
   }
   else if (key == "r_bm") par::r_bm = std::stof(value);
+  else if (key == "flavourBreakTolerance") par::flavourBreakTolerance = std::stof(value);
   else if (key == "coalescenceAlgorithm") {
       if (value == "kClassic") par::coalescenceAlgorithm = CoalescenceAlgorithm::kClassic;
       else if (value == "kFromParton") par::coalescenceAlgorithm = CoalescenceAlgorithm::kFromParton;
@@ -75,6 +77,7 @@ void printConfig () {
   std::cout << "isCalculateObvs = " << par::isCalculateObvs << std::endl;
   std::cout << "eventType = " << (par::eventType == EventType::kAMPT ? "kAMPT" : "kRandom") << std::endl;
   std::cout << "r_bm = " << par::r_bm << std::endl;
+  std::cout << "flavourBreakTolerance = " << par::flavourBreakTolerance << std::endl;
   std::cout << "coalescenceAlgorithm = " << (par::coalescenceAlgorithm == CoalescenceAlgorithm::kClassic ? "kClassic" : "kFromParton") << std::endl;
   std::cout << "inputFile = " << par::inputFile << std::endl;
   std::cout << "outputFile = " << par::outputFile << std::endl;

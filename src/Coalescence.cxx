@@ -427,8 +427,7 @@ void Coalescence::ProcessFromParton(std::vector<Parton> const &partons0, std::ve
       int pdg_lookup = LookupMesonSpecies(partonsUnused[0].PDG(), partonsUnused[1].PDG());
       // 如果刚好能够形成一个介子，打包成一个介子
       if(pdg_lookup != 0) {
-        std::cout<<"Two partons left with pdg code: "<<partonsUnused[0].PDG()<<", "<<partonsUnused[1].PDG()<<std::endl;
-        std::cout<<"and with serial: "<<partonsUnused[0].GetSerial()<<", "<<partonsUnused[1].GetSerial()<<std::endl;
+        if(par::isDebug) std::cout<<"Two partons (No."<<partonsUnused[0].GetSerial()<<", No."<<partonsUnused[1].GetSerial()<<") left with PDG code: "<<partonsUnused[0].PDG()<<", "<<partonsUnused[1].PDG()<<std::endl;
         // 如果有两个没有被使用的parton，而且这两个parton的PDG code同号，那么递归结束
         float x = (partonsUnused[0].X() + partonsUnused[1].X()) / 2;
         float y = (partonsUnused[0].Y() + partonsUnused[1].Y()) / 2;
@@ -442,9 +441,9 @@ void Coalescence::ProcessFromParton(std::vector<Parton> const &partons0, std::ve
           hadrons.back().SetParton0Position(partonsUnused[0].X(), partonsUnused[0].Y(), partonsUnused[0].Z());
           hadrons.back().SetParton1Position(partonsUnused[1].X(), partonsUnused[1].Y(), partonsUnused[1].Z());
         }
-        std::cout<<"------These two partons can form a meson: "<<pdg_lookup<<std::endl;
+        if(par::isDebug) std::cout<<"------These two partons can form a meson: "<<pdg_lookup<<std::endl;
         partonsUnused.clear();
-        std::cout<<"------Used partons vector cleared."<<std::endl;
+        if(par::isDebug) std::cout<<"------Used partons vector cleared."<<std::endl;
       } else {
         // 无法形成介子，递归结束
         std::cout<<"Two partons left with pdg code: "<<partonsUnused[0].PDG()<<", "<<partonsUnused[1].PDG()<<std::endl;
@@ -453,8 +452,7 @@ void Coalescence::ProcessFromParton(std::vector<Parton> const &partons0, std::ve
     } else if (partonsUnused.size() == 3) {
       int pdg_lookup = LookupBaryonSpecies(partonsUnused[0].PDG(), partonsUnused[1].PDG(), partonsUnused[2].PDG());
       if (pdg_lookup != 0) {
-        std::cout<<"Three partons left with pdg code: "<<partonsUnused[0].PDG()<<", "<<partonsUnused[1].PDG()<<", "<<partonsUnused[2].PDG()<<std::endl;
-        std::cout<<"and with serial: "<<partonsUnused[0].GetSerial()<<", "<<partonsUnused[1].GetSerial()<<", "<<partonsUnused[2].GetSerial()<<std::endl;
+        if(par::isDebug) std::cout<<"Three partons (No."<<partonsUnused[0].GetSerial()<<", No."<<partonsUnused[1].GetSerial()<<", No."<<partonsUnused[2].GetSerial()<<") left with PDG code: "<<partonsUnused[0].PDG()<<", "<<partonsUnused[1].PDG()<<", "<<partonsUnused[2].PDG()<<std::endl;
         // 可以形成重子，直接打包成一个hadron
         float x = (partonsUnused[0].X() + partonsUnused[1].X() + partonsUnused[2].X()) / 3;
         float y = (partonsUnused[0].Y() + partonsUnused[1].Y() + partonsUnused[2].Y()) / 3;
@@ -469,20 +467,15 @@ void Coalescence::ProcessFromParton(std::vector<Parton> const &partons0, std::ve
           hadrons.back().SetParton1Position(partonsUnused[1].X(), partonsUnused[1].Y(), partonsUnused[1].Z());
           hadrons.back().SetParton2Position(partonsUnused[2].X(), partonsUnused[2].Y(), partonsUnused[2].Z());
         }
-        std::cout<<"------These three partons can form a baryon: "<<pdg_lookup<<std::endl;
+        if(par::isDebug) std::cout<<"------These three partons can form a baryon: "<<pdg_lookup<<std::endl;
         partonsUnused.clear();
-        std::cout<<"------Used partons vector cleared."<<std::endl;
+        if(par::isDebug) std::cout<<"------Used partons vector cleared."<<std::endl;
         isNeedRecursion = false;
       }
     } else {
       // 其他情况，需要递归
       isNeedRecursion = true;
     }
-  }
-
-  std::cout<<"Left partons: "<<std::endl;
-  for (auto& p : partonsUnused) {
-    std::cout<<"Parton Serial: "<<p.GetSerial()<<", PDG code: "<<p.PDG()<<std::endl;
   }
 
   // 递归
@@ -500,14 +493,16 @@ void Coalescence::ProcessFromParton(std::vector<Parton> const &partons0, std::ve
       std::cout<<"----------------------------------------"<<std::endl;
     }
     // 如果最终partonsUnused大于0，说明递归结束后还有一些parton没有被使用
-    // FIXME：如果没有被使用的parton数量大于总parton数量的20%，那么应该报错，直接清零hadrons数组
     if (partonsUnused.size() > 0) {
-      if (partonsUnused.size() > 0.2 * nPartonsThisEvent) {
-        std::cerr<<"Error: "<<partonsUnused.size()<<" partons are left unused after recursion, which is more than 20% of the total partons."<<std::endl;
-        std::cerr<<"Clearing hadrons array."<<std::endl;
-        std::vector<Hadron>().swap(hadrons);
-      } else {
-        std::cout<<"Warning: "<<partonsUnused.size()<<" partons are left unused after recursion."<<std::endl;
+      if (par::isDebug) {
+        if (partonsUnused.size() > par::flavourBreakTolerance * partons.size()) {
+          std::cerr<<"Error: "<<partonsUnused.size()<<" partons are left unused after recursion, which is more than "<<par::flavourBreakTolerance / 100. <<"% of the total partons."<<std::endl;
+          std::cerr<<"This event will be saved as empty."<<std::endl;
+          std::cerr<<"Clearing hadrons array."<<std::endl;
+          std::vector<Hadron>().swap(hadrons);
+        } else {
+          std::cout<<"Warning: "<<partonsUnused.size()<<" partons are left unused after recursion."<<std::endl;
+        }
       }
     }
     // 递归结束, 重置递归次数为了下一个事件
@@ -643,3 +638,5 @@ void Coalescence::InitBaryonLookupTable() {
 
   // 其他重子的组合和对应的PDG代码
 }
+
+

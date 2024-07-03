@@ -46,6 +46,13 @@ class Coalescence {
     std::cout << "--------------------------" << std::endl;
     std::cout << "Coalescence:" << std::endl;
     std::cout << "Coalenscence process with r_bm = " << r_bm << std::endl;
+    std::cout << "Coalescence algorithm: ";
+    if (coalescenceAlgorithm == CoalescenceAlgorithm::kClassic) {
+      std::cout << "Classic" << std::endl;
+    } else if (coalescenceAlgorithm == CoalescenceAlgorithm::kFromParton) {
+      std::cout << "FromParton" << std::endl;
+    }
+    std::cout << "Coalescence favour breaking tolerance: " << par::flavourBreakTolerance/100 << "%" << std::endl;
     std::cout << "--------------------------" << std::endl;
   }
   ~Coalescence() {

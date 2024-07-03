@@ -82,14 +82,6 @@ int main(int argc, char** argv) {
     if(par::isWriteEvents) {
       writer.WriteEvent(Event<Hadron>(iEvent + 1, hadrons.size(), std::move(hadrons)));
     }
-    
-    std::cout << "Event " << iEvent << " processed" << std::endl;
-    std::cout <<"============xxxxxxxxxxxxxxxx=============="<< std::endl;
-    std::cout << std::endl;
-    std::cout << std::endl;
-    std::cout << std::endl;
-    std::cout << std::endl;
-    std::cout << std::endl;
   }
   std::cout << "All events processed" << std::endl;
 

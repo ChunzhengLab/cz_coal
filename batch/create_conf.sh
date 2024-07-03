@@ -31,6 +31,7 @@ isRemoveHFQuarks=true
 eventType=kAMPT
 r_bm=1.0
 coalescenceAlgorithm=kFromParton
+flavourBreakTolerance=0
 inputFile=${line}
 outputFile=${output_dir}/data_coalHadrons-${seq_number}.root
 obvsFile=${output_dir}/obvs_coalHadrons-${seq_number}.root
@@ -110,4 +111,3 @@ chmod 755 submit.sh
 echo "Total number of .conf files created: $conf_count"
 # 删除临时文件
 rm "$conf_counts_file" "$seq_numbers_file"
-
