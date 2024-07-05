@@ -9,6 +9,7 @@ struct PartonEventStruct {
   int   ID[30000];   //[nparton]
   float Px[30000], Py[30000], Pz[30000];   //[nparton]
   float X[30000], Y[30000], Z[30000];   //[nparton]
+  float Time[30000];   //[nparton]
 };
 
 struct HadronEventStruct {
@@ -18,6 +19,7 @@ struct HadronEventStruct {
   std::vector<float> Pt, Eta, Phi;
   std::vector<float> x, y, z;
   std::vector<float> dis;
+  std::vector<float> time;
   std::vector<int> quark0, quark1, quark2;
   std::vector<float> quark0_x, quark0_y, quark0_z;
   std::vector<float> quark1_x, quark1_y, quark1_z;
@@ -30,6 +32,7 @@ struct HadronEventStruct {
     Pt.clear(), Eta.clear(), Phi.clear();
     x.clear(), y.clear(), z.clear();
     dis.clear();
+    time.clear();
     quark0.clear(), quark1.clear(), quark2.clear();
     quark0_x.clear(), quark0_y.clear(), quark0_z.clear();
     quark1_x.clear(), quark1_y.clear(), quark1_z.clear();
@@ -52,14 +55,13 @@ public:
     nTrks = partonEventStruct.nparton;
     Particles.reserve(partonEventStruct.nparton);
     for (int i = 0; i < partonEventStruct.nparton; i++) {
-        T particle(i, partonEventStruct.ID[i], 
+        Particles.emplace_back(i, partonEventStruct.ID[i], 
                    partonEventStruct.X[i], partonEventStruct.Y[i], partonEventStruct.Z[i],
-                   partonEventStruct.Px[i], partonEventStruct.Py[i], partonEventStruct.Pz[i]);
-        Particles.emplace_back(particle);
+                   partonEventStruct.Px[i], partonEventStruct.Py[i], partonEventStruct.Pz[i],
+                   partonEventStruct.Time[i]);
     }
   }
   ~Event() {}
-  void SetParticles(const std::vector<T>& particles) { Particles = particles; }
   const std::vector<T>& GetParticles() const { return Particles; }
   void SetSerial(int nSerial) { this->nSerial = nSerial; }
   int GetSerial() const { return nSerial; }

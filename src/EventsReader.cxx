@@ -18,12 +18,6 @@ void EventsReader::UpdateEvent(int iEvent) {
   currentEvent = std::move(Event<Parton>(partonEventStruct));
   if (par::isDebug) {
     std::cout << ">>>>>>>>Move to Entry(iEvent)>>>>>>>" << iEvent << std::endl;
-    std::cout << "Event ID: " << partonEventStruct.nevent << std::endl;
-    std::cout << "First parton ID: " << partonEventStruct.ID[0] << std::endl;
-    std::cout << "First parton Z: " << partonEventStruct.Z[0] << std::endl;
-    std::cout << "Second parton ID: " << partonEventStruct.ID[1] << std::endl;
-    std::cout << "Second parton Z: " << partonEventStruct.Z[1] << std::endl;
-    std::cout << "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<" << std::endl;
   }
 }
 
@@ -77,6 +71,7 @@ bool EventsReader::InitTree(TString nameFile) {
   chain->SetBranchAddress("X", partonEventStruct.X);
   chain->SetBranchAddress("Y", partonEventStruct.Y);
   chain->SetBranchAddress("Z", partonEventStruct.Z);
+  chain->SetBranchAddress("Time", partonEventStruct.Time);
 
   // 调试信息
   if (par::isDebug) {

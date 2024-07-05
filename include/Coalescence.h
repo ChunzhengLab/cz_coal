@@ -24,6 +24,7 @@ class Coalescence {
   static std::map<BaryonCombination, int> baryonLookupTable;
   // 介子信息的查找表
   static std::map<MesonCombination, int> mesonLookupTable;
+  void ResetRecursionForNextEvent() { this->nRecursionThisEvent = 0; this->nPartonsThisEvent = 0; }
   public:
   explicit Coalescence(float r_bm, CoalescenceAlgorithm coalescenceAlgorithm) : r_bm(r_bm) , coalescenceAlgorithm(coalescenceAlgorithm) {
     if (!initialized) {
@@ -41,7 +42,6 @@ class Coalescence {
   int LookupBaryonSpecies(int pdg_quark_0, int pdg_quark_1, int pdg_quark_2);
   void InitBaryonLookupTable();
   void InitMesonLookupTable();
-  void ResetRecursionForThisEvent() { nRecursionThisEvent = 0; }
   void Print() const {
     std::cout << "--------------------------" << std::endl;
     std::cout << "Coalescence:" << std::endl;

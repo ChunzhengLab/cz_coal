@@ -11,10 +11,11 @@ private:
   int pdg; // PDG code
   float x, y, z; // position
   float px, py, pz; // momentum
+  float time; // time
 public:
   //构造函数
-  Particle(int nSerial = 0, int pdg = 0, float x = 0, float y = 0, float z = 0, float px = 0, float py = 0, float pz = 0)
-      : nSerial(nSerial), pdg(pdg), x(x), y(y), z(z), px(px), py(py), pz(pz) {}
+  Particle(int nSerial = 0, int pdg = 0, float x = 0, float y = 0, float z = 0, float px = 0, float py = 0, float pz = 0, float time = 0)
+      : nSerial(nSerial), pdg(pdg), x(x), y(y), z(z), px(px), py(py), pz(pz), time(time) {}
   virtual ~Particle() {}
   void SetSerial(int nSerial) { this->nSerial = nSerial; }
   int GetSerial() const { return nSerial; }
@@ -30,6 +31,7 @@ public:
   float Px() const { return px; }
   float Py() const { return py; }
   float Pz() const { return pz; }
+  float Time() const { return time; }
   float Pt() const { return sqrt(px * px + py * py); }
   float Eta() const { 
     float p = sqrt(px * px + py * py + pz * pz);
@@ -50,8 +52,8 @@ public:
 class Parton : public Particle {
   public:
   //构造函数
-  Parton(int nSerial = 0, int pdg = 0, float x = 0, float y = 0, float z = 0, float px = 0, float py = 0, float pz = 0)
-      : Particle(nSerial, pdg, x, y, z, px, py, pz) {}
+  Parton(int nSerial = 0, int pdg = 0, float x = 0, float y = 0, float z = 0, float px = 0, float py = 0, float pz = 0, float time = 0)
+      : Particle(nSerial, pdg, x, y, z, px, py, pz, time) {}
 };
 
 class Hadron : public Particle {
@@ -64,8 +66,8 @@ class Hadron : public Particle {
 
   public:
   //构造函数
-  Hadron(int nSerial = 0, int pdg = 0, float x = 0, float y = 0, float z = 0, float px = 0, float py = 0, float pz = 0, float distance = 0, int nSerial0 = 0, int nSerial1 = 0, int nSerial2 = 0)
-      : Particle(nSerial, pdg, x, y, z, px, py, pz), distance(distance), nSerial0(nSerial0), nSerial1(nSerial1), nSerial2(nSerial2) {}
+  Hadron(int nSerial = 0, int pdg = 0, float x = 0, float y = 0, float z = 0, float px = 0, float py = 0, float pz = 0, float time = 0, float distance = 0, int nSerial0 = 0, int nSerial1 = 0, int nSerial2 = 0)
+      : Particle(nSerial, pdg, x, y, z, px, py, pz, time), distance(distance), nSerial0(nSerial0), nSerial1(nSerial1), nSerial2(nSerial2) {}
   float Distance() const { return distance; }
   void GetPartonSerials(int &nSerial0, int &nSerial1, int &nSerial2) const { nSerial0 = this->nSerial0; nSerial1 = this->nSerial1; nSerial2 = this->nSerial2; }
   void GetPartonSerials(int &nSerial0, int &nSerial1) const { nSerial0 = this->nSerial0; nSerial1 = this->nSerial1; }

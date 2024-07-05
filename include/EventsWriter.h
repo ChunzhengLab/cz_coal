@@ -29,6 +29,7 @@ class EventsWriter {
       tree->Branch("x", &hadronEventStruct.x);
       tree->Branch("y", &hadronEventStruct.y);
       tree->Branch("z", &hadronEventStruct.z);
+      tree->Branch("time", &hadronEventStruct.time);
       tree->Branch("dis", &hadronEventStruct.dis);
       tree->Branch("quark0", &hadronEventStruct.quark0);
       tree->Branch("quark1", &hadronEventStruct.quark1);

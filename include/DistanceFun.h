@@ -116,3 +116,39 @@ float minDistanceTLikeStructure(float x1, float y1, float z1, float x2, float y2
     return d3;
   }
 }
+
+inline void moveOn(float& x, float& y, float& z, float px, float py, float pz, float dt) {
+  x += px * dt;
+  y += py * dt;
+  z += pz * dt;
+}
+
+float perimeter(float x1, float y1, float z1, float x2, float y2, float z2, float x3, float y3, float z3) {
+  return distance3D(x1, y1, z1, x2, y2, z2) + distance3D(x1, y1, z1, x3, y3, z3) + distance3D(x2, y2, z2, x3, y3, z3);
+}
+
+float perimeterMoveOn(float &x1, float &y1, float &z1, float px1, float py1, float pz1, float &x2, float &y2, float &z2, float px2, float py2, float pz2, float &x3, float &y3, float &z3, float px3, float py3, float pz3, float t1, float t2, float t3) {
+  float tmax = t1 > t2 ? t1 : t2;
+  tmax = tmax > t3 ? tmax : t3;
+  if (tmax == t1) {
+    moveOn(x2, y2, z2, px2, py2, pz2, tmax - t2);
+    moveOn(x3, y3, z3, px3, py3, pz3, tmax - t3);
+  } else if (tmax == t2) {
+    moveOn(x1, y1, z1, px1, py1, pz1, tmax - t1);
+    moveOn(x3, y3, z3, px3, py3, pz3, tmax - t3);
+  } else {
+    moveOn(x1, y1, z1, px1, py1, pz1, tmax - t1);
+    moveOn(x2, y2, z2, px2, py2, pz2, tmax - t2);
+  }
+  return perimeter(x1, y1, z1, x2, y2, z2, x3, y3, z3);
+}
+
+
+float distance3DMoveOn(float x1, float y1, float z1, float x2, float y2, float z2, float px1, float py1, float pz1, float px2, float py2, float pz2, float t1, float t2) {
+  if (t1 > t2) {
+    moveOn(x1, y1, z1, px1, py1, pz1, t1 - t2);
+  } else if (t1 < t2) {
+    moveOn(x2, y2, z2, px2, py2, pz2, t2 - t1);
+  }
+  return distance3D(x1, y1, z1, x2, y2, z2);
+}

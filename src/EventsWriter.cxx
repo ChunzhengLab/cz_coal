@@ -17,6 +17,7 @@ void EventsWriter::Event2HadronEventStruct(const Event<Hadron>& event) {
     hadronEventStruct.x.emplace_back(particle.X());
     hadronEventStruct.y.emplace_back(particle.Y());
     hadronEventStruct.z.emplace_back(particle.Z());
+    hadronEventStruct.time.emplace_back(particle.Time());
     hadronEventStruct.dis.emplace_back(particle.Distance());
     hadronEventStruct.quark0.emplace_back(particle.GetPartonSerial0());
     hadronEventStruct.quark1.emplace_back(particle.GetPartonSerial1());
