@@ -23,6 +23,7 @@ namespace par {
   extern bool isWriteEvents;
   extern bool isCalculateObvs;
   extern bool isRemoveHFQuarks;
+  extern bool isEnableMassVarify;
   extern EventType eventType;
   //r_bm的默认值
   extern float r_bm;

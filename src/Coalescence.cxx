@@ -703,6 +703,13 @@ void Coalescence::InitBaryonLookupTable() {
 bool Coalescence::MassVarify(const int genPdg, const int pdg0, const int pdg1, float& genpx, float& genpy, float& genpz, const float px0, const float py0, const float pz0, const float px1, const float py1, const float pz1) {
   // 计算两个粒子的能量
   if (par::mass.find(genPdg) == par::mass.end() || par::mass.find(pdg0) == par::mass.end() || par::mass.find(pdg1) == par::mass.end()) return false;
+  // 不做质量验证
+  if (!par::isEnableMassVarify) {
+    genpx = px0 + px1;
+    genpy = py0 + py1;
+    genpz = pz0 + pz1;
+    return true;
+  }
   float E0 = sqrt(px0 * px0 + py0 * py0 + pz0 * pz0 + par::mass[pdg0] * par::mass[pdg0]);
   float E1 = sqrt(px1 * px1 + py1 * py1 + pz1 * pz1 + par::mass[pdg1] * par::mass[pdg1]);
   float E = E0 + E1;
@@ -725,6 +732,13 @@ bool Coalescence::MassVarify(const int genPdg, const int pdg0, const int pdg1, f
 
 bool Coalescence::MassVarify(const int genPdg, const int pdg0, const int pdg1, const int pdg2, float& genpx, float& genpy, float& genpz, const float px0, const float py0, const float pz0, const float px1, const float py1, const float pz1, const float px2, const float py2, const float pz2) {
   if (par::mass.find(genPdg) == par::mass.end() || par::mass.find(pdg0) == par::mass.end() || par::mass.find(pdg1) == par::mass.end() || par::mass.find(pdg2) == par::mass.end()) return false;
+  //不做质量验证
+  if (!par::isEnableMassVarify) {
+    genpx = px0 + px1 + px2;
+    genpy = py0 + py1 + py2;
+    genpz = pz0 + pz1 + pz2;
+    return true;
+  }
   // 计算两个粒子的能量
   float E0 = sqrt(px0 * px0 + py0 * py0 + pz0 * pz0 + par::mass[pdg0] * par::mass[pdg0]);
   float E1 = sqrt(px1 * px1 + py1 * py1 + pz1 * pz1 + par::mass[pdg1] * par::mass[pdg1]);

@@ -92,7 +92,7 @@ void Draw() {
   c2->Divide(2,1);
   c2->cd(1);
   c2->cd(1)->SetGrid();
-  TH2D* dummyDelta = new TH2D("dummyDelta", ";;#delta", 4, 0., 4.,1,-5e-4,5e-4);
+  TH2D* dummyDelta = new TH2D("dummyDelta", ";;#delta", 4, 0., 4.,1,-2e-3,2e-3);
   dummyDelta->SetStats(0);
   dummyDelta->GetXaxis()->SetBinLabel(1, "#Lambda-p");
   dummyDelta->GetXaxis()->SetBinLabel(2, "#Lambda-#bar{p}");
