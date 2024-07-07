@@ -428,6 +428,7 @@ void Coalescence::ProcessFromParton(std::vector<Parton> const &partons0, std::ve
       partonsUnused.emplace_back(partons[i]);
     }
   }
+
   if(par::isDebug) {
     std::cout<<"partonsUnused pdg:"<<std::endl;
     for (int i = 0; i < partonsUnused.size(); i++) {
@@ -440,7 +441,7 @@ void Coalescence::ProcessFromParton(std::vector<Parton> const &partons0, std::ve
   if (nRecursionThisEvent > 5) {
     // 如果递归超过5次，那么直接结束递归
     isNeedRecursion = false;
-    std::cout<<"Recursion times exceed 5, recursion ends."<<std::endl;
+    if(par::isDebug) std::cout<<"Recursion times exceed 5, recursion ends."<<std::endl;
   } else {
     if (partonsUnused.size() == 0) {
       // 如果没有没有被使用的parton，那么递归结束
@@ -480,8 +481,10 @@ void Coalescence::ProcessFromParton(std::vector<Parton> const &partons0, std::ve
         if(par::isDebug) std::cout<<"------Used partons vector cleared."<<std::endl;
       } else {
         // 无法形成介子，递归结束
-        std::cout<<"Two partons left with pdg code: "<<partonsUnused[0].PDG()<<", "<<partonsUnused[1].PDG()<<std::endl;
-        std::cout<<"------These two partons cannot form a meson."<<std::endl;
+        if(par::isDebug) {
+          std::cout<<"Two partons left with pdg code: "<<partonsUnused[0].PDG()<<", "<<partonsUnused[1].PDG()<<std::endl;
+          std::cout<<"------These two partons cannot form a meson."<<std::endl;
+        }
       }
     } else if (partonsUnused.size() == 3) {
       // 如果只有三个个没有被使用的parton
