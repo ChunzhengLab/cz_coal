@@ -72,7 +72,7 @@ void Coalescence::ProcessClassic(std::vector<Parton> const &partons, std::vector
       float d = d_meson;
 
       nSerialHadron++;
-      Hadron hadronCadi(nSerialHadron, pdg_meson, (x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2, (px0 + px1) / 2, (py0 + py1) / 2, (pz0 + pz1) / 2, d, nSerial_0, nSerial_1, 0);
+      Hadron hadronCadi(nSerialHadron, pdg_meson, (x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2, (px0 + px1), (py0 + py1), (pz0 + pz1), d, nSerial_0, nSerial_1, 0);
       queHadronCadidates.push(hadronCadi);
       // std::cout << "Distance between parton " << nSerial_0 << " and parton " << nSerial_1 << " is " << d << std::endl;
     }
@@ -128,7 +128,7 @@ void Coalescence::ProcessClassic(std::vector<Parton> const &partons, std::vector
         float d = d_baryon * r_bm;
 
         nSerialHadron++;
-        Hadron hadronCadi(nSerialHadron, pdg_baryon, x, y, z, (px0 + px1 + px2) / 3, (py0 + py1 + py2) / 3, (pz0 + pz1 + pz2) / 3, d, nSerial_0, nSerial_1, nSerial_2);
+        Hadron hadronCadi(nSerialHadron, pdg_baryon, x, y, z, (px0 + px1 + px2), (py0 + py1 + py2), (pz0 + pz1 + pz2), d, nSerial_0, nSerial_1, nSerial_2);
         queHadronCadidates.push(hadronCadi);
         // std::cout << "Fermat point of parton " << nSerial_0 << ", parton " << nSerial_1 << " and parton " << nSerial_2 << " is (" << x << ", " << y << ", " << z << ") with distance " << d << std::endl;
       }
@@ -360,9 +360,9 @@ void Coalescence::ProcessFromParton(std::vector<Parton> const &partons0, std::ve
       x_hadron = (x0 + x[meson_quark_label[1]]) / 2;
       y_hadron = (y0 + y[meson_quark_label[1]]) / 2;
       z_hadron = (z0 + z[meson_quark_label[1]]) / 2;
-      px_hadron = (px[meson_quark_label[0]] + px[meson_quark_label[1]]) / 2;
-      py_hadron = (py[meson_quark_label[0]] + py[meson_quark_label[1]]) / 2;
-      pz_hadron = (pz[meson_quark_label[0]] + pz[meson_quark_label[1]]) / 2;
+      px_hadron = (px[meson_quark_label[0]] + px[meson_quark_label[1]]);
+      py_hadron = (py[meson_quark_label[0]] + py[meson_quark_label[1]]);
+      pz_hadron = (pz[meson_quark_label[0]] + pz[meson_quark_label[1]]);
       hadrons.emplace_back(nHadronSerial++, pdg_hadron, x_hadron, y_hadron, z_hadron, px_hadron, py_hadron, pz_hadron, dis, partons[meson_quark_label[0]].GetSerial(), partons[meson_quark_label[1]].GetSerial(), -1);
       if(par::isDebug) {
         hadrons.back().SetParton0Position(x[meson_quark_label[0]], y[meson_quark_label[0]], z[meson_quark_label[0]]);
@@ -377,9 +377,9 @@ void Coalescence::ProcessFromParton(std::vector<Parton> const &partons0, std::ve
       x_hadron = (x[baryon_quark_label[0]] + x[baryon_quark_label[1]] + x[baryon_quark_label[2]]) / 3;
       y_hadron = (y[baryon_quark_label[0]] + y[baryon_quark_label[1]] + y[baryon_quark_label[2]]) / 3;
       z_hadron = (x[baryon_quark_label[0]] + z[baryon_quark_label[1]] + z[baryon_quark_label[2]]) / 3;
-      px_hadron = (px[baryon_quark_label[0]] + px[baryon_quark_label[1]] + px[baryon_quark_label[2]]) / 3;
-      py_hadron = (py[baryon_quark_label[0]] + py[baryon_quark_label[1]] + py[baryon_quark_label[2]]) / 3;
-      pz_hadron = (pz[baryon_quark_label[0]] + pz[baryon_quark_label[1]] + pz[baryon_quark_label[2]]) / 3;
+      px_hadron = (px[baryon_quark_label[0]] + px[baryon_quark_label[1]] + px[baryon_quark_label[2]]);
+      py_hadron = (py[baryon_quark_label[0]] + py[baryon_quark_label[1]] + py[baryon_quark_label[2]]);
+      pz_hadron = (pz[baryon_quark_label[0]] + pz[baryon_quark_label[1]] + pz[baryon_quark_label[2]]);
       hadrons.emplace_back(nHadronSerial++, pdg_hadron, x_hadron, y_hadron, z_hadron, px_hadron, py_hadron, pz_hadron, dis, partons[baryon_quark_label[0]].GetSerial(), partons[baryon_quark_label[1]].GetSerial(), partons[baryon_quark_label[2]].GetSerial());
       if(par::isDebug) {
         hadrons.back().SetParton0Position(x[baryon_quark_label[0]], y[baryon_quark_label[0]], z[baryon_quark_label[0]]);
@@ -432,9 +432,9 @@ void Coalescence::ProcessFromParton(std::vector<Parton> const &partons0, std::ve
         float x = (partonsUnused[0].X() + partonsUnused[1].X()) / 2;
         float y = (partonsUnused[0].Y() + partonsUnused[1].Y()) / 2;
         float z = (partonsUnused[0].Z() + partonsUnused[1].Z()) / 2;
-        float px = (partonsUnused[0].Px() + partonsUnused[1].Px()) / 2;
-        float py = (partonsUnused[0].Py() + partonsUnused[1].Py()) / 2;
-        float pz = (partonsUnused[0].Pz() + partonsUnused[1].Pz()) / 2;
+        float px = (partonsUnused[0].Px() + partonsUnused[1].Px());
+        float py = (partonsUnused[0].Py() + partonsUnused[1].Py());
+        float pz = (partonsUnused[0].Pz() + partonsUnused[1].Pz());
         float d = distance3D(partonsUnused[0].X(), partonsUnused[0].Y(), partonsUnused[0].Z(), partonsUnused[1].X(), partonsUnused[1].Y(), partonsUnused[1].Z());
         hadrons.emplace_back(nHadronSerial++, pdg_lookup, x, y, z, px, py, pz, d, partonsUnused[0].GetSerial(), partonsUnused[1].GetSerial(), -1);
         if(par::isDebug) {
@@ -457,9 +457,9 @@ void Coalescence::ProcessFromParton(std::vector<Parton> const &partons0, std::ve
         float x = (partonsUnused[0].X() + partonsUnused[1].X() + partonsUnused[2].X()) / 3;
         float y = (partonsUnused[0].Y() + partonsUnused[1].Y() + partonsUnused[2].Y()) / 3;
         float z = (partonsUnused[0].Z() + partonsUnused[1].Z() + partonsUnused[2].Z()) / 3;
-        float px = (partonsUnused[0].Px() + partonsUnused[1].Px() + partonsUnused[2].Px()) / 3;
-        float py = (partonsUnused[0].Py() + partonsUnused[1].Py() + partonsUnused[2].Py()) / 3;
-        float pz = (partonsUnused[0].Pz() + partonsUnused[1].Pz() + partonsUnused[2].Pz()) / 3;
+        float px = (partonsUnused[0].Px() + partonsUnused[1].Px() + partonsUnused[2].Px());
+        float py = (partonsUnused[0].Py() + partonsUnused[1].Py() + partonsUnused[2].Py());
+        float pz = (partonsUnused[0].Pz() + partonsUnused[1].Pz() + partonsUnused[2].Pz());
         float d = minDistanceTLikeStructure(partonsUnused[0].X(), partonsUnused[0].Y(), partonsUnused[0].Z(), partonsUnused[1].X(), partonsUnused[1].Y(), partonsUnused[1].Z(), partonsUnused[2].X(), partonsUnused[2].Y(), partonsUnused[2].Z());
         hadrons.emplace_back(nHadronSerial++, pdg_lookup, x, y, z, px, py, pz, d, partonsUnused[0].GetSerial(), partonsUnused[1].GetSerial(), partonsUnused[2].GetSerial());
         if(par::isDebug) {
