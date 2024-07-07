@@ -24,6 +24,7 @@ public:
   void GetMomentum(float &px, float &py, float &pz) const { px = this->px; py = this->py; pz = this->pz; }
   void GetPosition(float &x, float &y, float &z) const { x = this->x; y = this->y; z = this->z; }
   void SetPDG(int pdg) { this->pdg = pdg; }
+  void SetTime(float time) { this->time = time; }
   int PDG() const { return pdg; }
   float X() const { return x; }
   float Y() const { return y; }

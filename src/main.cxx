@@ -62,7 +62,8 @@ int main(int argc, char** argv) {
     if (iEvent % 50 == 0) {
       std::cout << "Processing event " << iEvent << " / " << reader.GetNEvents() << std::endl;
     }
-
+    
+    std::cout << "======================" << std::endl;
     // 读取PartonEvent
     Event<Parton>& partonEvent = reader.GetEvent(iEvent);
 
@@ -82,6 +83,7 @@ int main(int argc, char** argv) {
     if(par::isWriteEvents) {
       writer.WriteEvent(Event<Hadron>(iEvent + 1, hadrons.size(), std::move(hadrons)));
     }
+    std::cout << "======================" << std::endl;
   }
   std::cout << "All events processed" << std::endl;
 

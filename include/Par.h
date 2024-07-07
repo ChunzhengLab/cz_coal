@@ -3,6 +3,7 @@
 #include <fstream>
 #include <sstream>
 #include <iostream>
+#include <map>
 
 enum class CoalescenceAlgorithm {
   kClassic,
@@ -35,4 +36,6 @@ namespace par {
   //维护一个全局的随机数生成器
   extern std::mt19937 gen;
   extern std::uniform_int_distribution<> zero_or_one;
+
+  extern std::map<int, float> mass;
 }

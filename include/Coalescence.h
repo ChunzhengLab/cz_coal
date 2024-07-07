@@ -34,6 +34,8 @@ class Coalescence {
     }
   }
   bool IsInitialized() const { return initialized; }
+  bool MassVarify(const int genPdg, const int pdg0, const int pdg1, float& genpx, float& genpy, float& genpz, const float px0, const float py0, const float pz0, const float px1, const float py1, const float pz1);
+  bool MassVarify(const int genPdg, const int pdg0, const int pdg1, const int pdg2, float& genpx, float& genpy, float& genpz, const float px0, const float py0, const float pz0, const float px1, const float py1, const float pz1, const float px2, const float py2, const float pz2);
   void Process(std::vector<Parton> const &partons, std::vector<Hadron> &hadrons);
   void ProcessFromParton(std::vector<Parton> const &partons0, std::vector<Hadron> &hadrons, int nLastHadronSerial = 0);
   void ProcessClassic(std::vector<Parton> const &partons, std::vector<Hadron> &hadrons);
@@ -52,7 +54,7 @@ class Coalescence {
     } else if (coalescenceAlgorithm == CoalescenceAlgorithm::kFromParton) {
       std::cout << "FromParton" << std::endl;
     }
-    std::cout << "Coalescence favour breaking tolerance: " << par::flavourBreakTolerance/100 << "%" << std::endl;
+    std::cout << "Coalescence favour breaking tolerance: " << par::flavourBreakTolerance*100 << "%" << std::endl;
     std::cout << "--------------------------" << std::endl;
   }
   ~Coalescence() {
