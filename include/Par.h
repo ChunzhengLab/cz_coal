@@ -24,6 +24,7 @@ namespace par {
   extern bool isCalculateObvs;
   extern bool isRemoveHFQuarks;
   extern bool isEnableMassVarify;
+  extern bool isEnableQuarkMoveOn;
   extern EventType eventType;
   //r_bm的默认值
   extern float r_bm;

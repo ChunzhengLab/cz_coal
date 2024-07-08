@@ -252,14 +252,15 @@ void Coalescence::ProcessFromParton(std::vector<Parton> const &partons0, std::ve
   int nPartons = partons.size();
 
   for (int i = 0; i < nPartons; i++) {
-    // partons[i].SetTime(0);
+    if (!par::isEnableQuarkMoveOn) partons[i].SetTime(0); // 如果不启用quark move on，那么将所有parton的时间设置为0, 也就是所有parton都在同一时刻
     isThisPartonUsed[i] = false;
     // 如果是重夸克c = 4, b = 5, t = 6，直接标记为已使用
     if (par::isRemoveHFQuarks && (abs(partons[i].PDG()) > 3)) {
       isThisPartonUsed[i] = true;
     }
   }
-
+  
+  // 为了递归之后的hadron序列号连续
   int nHadronSerial = nLastHadronSerial;
   for (int iParton = 0; iParton < nPartons; iParton++) {
     if (isThisPartonUsed[iParton]) continue;

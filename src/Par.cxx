@@ -8,6 +8,7 @@ namespace par {
   bool isCalculateObvs = true;
   bool isRemoveHFQuarks = true;
   bool isEnableMassVarify = true;
+  bool isEnableQuarkMoveOn = true;
 
   std::string inputFile = "zpc-1.root";
   std::string outputFile = "output.root";
@@ -115,6 +116,7 @@ void parseConfig(const std::string& line) {
   else if (key == "isCalculateObvs") par::isCalculateObvs = (value == "true");
   else if (key == "isRemoveHFQuarks") par::isRemoveHFQuarks = (value == "true");
   else if (key == "isEnableMassVarify") par::isEnableMassVarify = (value == "true");
+  else if (key == "isEnableQuarkMoveOn") par::isEnableQuarkMoveOn = (value == "true");
   else if (key == "eventType") {
       if (value == "kAMPT") par::eventType = EventType::kAMPT;
       else if (value == "kRandom") par::eventType = EventType::kRandom;
@@ -146,6 +148,7 @@ void printConfig () {
   std::cout << "isCalculateObvs = " << par::isCalculateObvs << std::endl;
   std::cout << "isRemoveHFQuarks = " << par::isRemoveHFQuarks << std::endl;
   std::cout << "isEnableMassVarify = " << par::isEnableMassVarify << std::endl;
+  std::cout << "isEnableQuarkMoveOn = " << par::isEnableQuarkMoveOn << std::endl;
   std::cout << "eventType = " << (par::eventType == EventType::kAMPT ? "kAMPT" : "kRandom") << std::endl;
   std::cout << "r_bm = " << par::r_bm << std::endl;
   std::cout << "flavourBreakTolerance = " << par::flavourBreakTolerance << std::endl;
