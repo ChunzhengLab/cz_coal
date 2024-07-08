@@ -10,5 +10,6 @@
 build
 bin
 test
+testQuarkMoveOn
 temp
 ref
