@@ -2,7 +2,7 @@
 #include <cmath>
 
 // 求两点之间的距离
-float distance3D(float x1, float y1, float z1, float x2, float y2, float z2) {
+inline float distance3D(float x1, float y1, float z1, float x2, float y2, float z2) {
   return sqrt(pow(x1 - x2, 2) + pow(y1 - y2, 2) + pow(z1 - z2, 2));
 }
 
@@ -123,7 +123,7 @@ inline void moveOn(float& x, float& y, float& z, float px, float py, float pz, f
   z += pz * dt;
 }
 
-float perimeter(float x1, float y1, float z1, float x2, float y2, float z2, float x3, float y3, float z3) {
+inline float perimeter(float x1, float y1, float z1, float x2, float y2, float z2, float x3, float y3, float z3) {
   return distance3D(x1, y1, z1, x2, y2, z2) + distance3D(x1, y1, z1, x3, y3, z3) + distance3D(x2, y2, z2, x3, y3, z3);
 }
 

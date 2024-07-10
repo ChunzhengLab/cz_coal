@@ -51,10 +51,17 @@ public:
 
 // Parton和Hadron的实现
 class Parton : public Particle {
+  bool isUsed = false; //是否已经被使用
+  bool isUsedAsDiQuark = false; //是否已经被使用作为di-quark
   public:
   //构造函数
   Parton(int nSerial = 0, int pdg = 0, float x = 0, float y = 0, float z = 0, float px = 0, float py = 0, float pz = 0, float time = 0)
       : Particle(nSerial, pdg, x, y, z, px, py, pz, time) {}
+  bool IsUsed() const { return isUsed; }
+  void LabelAsUsed() { isUsed = true; }
+  bool IsUsedAsDiQuark() const { return isUsedAsDiQuark; }
+  void LabelAsUsedByDiQuark() { isUsedAsDiQuark = true; }
+  void ClearLabelAsUsedByDiQuark() { isUsedAsDiQuark = false; }
 };
 
 class Hadron : public Particle {

@@ -198,7 +198,7 @@ int Coalescence::LookupMesonSpecies(int pdg_quark_0, int pdg_quark_1) {
   // std::cout << "r_bm = " << r_bm << std::endl;
   // std::cout << "Coalescence to hadron" << std::endl;
   if (pdg_quark_0 == 0 || pdg_quark_1 == 0) {
-    std::cout << "There is a quark without species, return 0" << std::endl;
+    std::cout << "Looking up meson species, there is a quark without species, return 0" << std::endl;
     return 0;
   }
   // There are two quarks with the same sign, return 0
@@ -221,7 +221,7 @@ int Coalescence::LookupBaryonSpecies(int pdg_quark_0, int pdg_quark_1, int pdg_q
   // std::cout << "r_bm = " << r_bm << std::endl;
   // std::cout << "Coalescence to hadron" << std::endl;
   if (pdg_quark_0 == 0 || pdg_quark_1 == 0 || pdg_quark_2 == 0) {
-    std::cout << "There is a quark without species, return 0" << std::endl;
+    std::cout << "Looking up baryon species, there is a quark without species, return 0" << std::endl;
     return 0;
   }
   // 三个夸克一定全是同号，否则返回0
@@ -245,193 +245,255 @@ void Coalescence::ProcessFromParton(std::vector<Parton> const &partons0, std::ve
   // 这种算法，每次循环必出现一个hadron
   // 随机化parton vector
 
-  auto& partons = const_cast<std::vector<Parton>&>(partons0);
-  std::shuffle(partons.begin(), partons.end(), par::gen);
-
-  bool isThisPartonUsed[partons.size()];
+  auto partons = const_cast<std::vector<Parton>&>(partons0);
+  // std::shuffle(partons.begin(), partons.end(), par::gen);
   int nPartons = partons.size();
 
-  for (int i = 0; i < nPartons; i++) {
-    if (!par::isEnableQuarkMoveOn) partons[i].SetTime(0); // 如果不启用quark move on，那么将所有parton的时间设置为0, 也就是所有parton都在同一时刻
-    isThisPartonUsed[i] = false;
-    // 如果是重夸克c = 4, b = 5, t = 6，直接标记为已使用
-    if (par::isRemoveHFQuarks && (abs(partons[i].PDG()) > 3)) {
-      isThisPartonUsed[i] = true;
-    }
-  }
-  
   // 为了递归之后的hadron序列号连续
   int nHadronSerial = nLastHadronSerial;
+
+  for (int i = 0; i < nPartons; i++) {
+    // 如果不启用quark move on，那么将所有parton的时间设置为0, 也就是所有parton都在同一时刻
+    if (!par::isEnableQuarkMoveOn) {
+      partons[i].SetTime(0);
+    }
+    // 如果是重夸克c = 4, b = 5, t = 6，直接标记为已使用
+    if (par::isRemoveHFQuarks && (abs(partons[i].PDG()) > 3)) {
+      partons[i].LabelAsUsed();
+    }
+    // 如果夸克的PDG是0（代表没有PDG信息），那么标记为已使用
+    if (partons[i].PDG() == 0) {
+      std::cerr<<partons[i].GetSerial()<<"th parton has PDG code 0, which is invalid."<<std::endl;
+      partons[i].LabelAsUsed();
+    }
+  }
+
   for (int iParton = 0; iParton < nPartons; iParton++) {
-    if (isThisPartonUsed[iParton]) continue;
+    if (partons[iParton].IsUsed()) continue;
     // 第0个parton
-    float x0 = 0, y0 = 0, z0 = 0;
-    float px0 = 0, py0 = 0, pz0 = 0;
-    partons[iParton].GetPosition(x0, y0, z0);
-    partons[iParton].GetMomentum(px0, py0, pz0);
-    float t0 = partons[iParton].Time();
     float pdg0 = partons[iParton].PDG();
-    if (pdg0 == 0) continue;
+    float x0 = partons[iParton].X(), y0 = partons[iParton].Y(), z0 = partons[iParton].Z();
+    float px0 = partons[iParton].Px(), py0 = partons[iParton].Py(), pz0 = partons[iParton].Pz();
+    float t0 = partons[iParton].Time();
 
     // meson
+    int pdg_me = 0;
     float x_me = 0, y_me = 0, z_me = 0;
     float px_me = 0, py_me = 0, pz_me = 0;
     float t_me = 0;
-    int pdg_me = 0;
+    float d_meson_min = std::numeric_limits<float>::max();
+
+    // diquark
+    float d_diquark_min = std::numeric_limits<float>::max();
 
     // baryon
+    int pdg_ba = 0;
     float x_ba = 0, y_ba = 0, z_ba = 0;
     float px_ba = 0, py_ba = 0, pz_ba = 0;
     float t_ba = 0;
-    int pdg_ba = 0;
+    float d_baryon_min = std::numeric_limits<float>::max();
 
-    float d_meson_min = 1e6;
-    float d_diquark_min = 1e6;
-    float d_baryon_min = 1e6;
-    
+    // 存储用于生成hadron的quark的脚标
     int meson_quark_label[2] = {iParton, -1};
     int diquark_quark_label[2] = {iParton, -1};
     int baryon_quark_label[3] = {iParton, -1, -1};
-    std::vector<bool> isPartonUsedAsDiquarkThisLoop(nPartons, false);
 
     int nSerialLastDiquark = -1; // 上一个di-quark的序列号
 
     for (int jParton = iParton + 1; jParton < nPartons; jParton++) {
-      float x1 = 0, y1 = 0, z1 = 0;
-      float px1 = 0, py1 = 0, pz1 = 0;
-      float t1 = 0;
-      int pdg1 = 0;
-      if (isThisPartonUsed[jParton]) continue;
-      partons[jParton].GetPosition(x1, y1, z1);
-      partons[jParton].GetMomentum(px1, py1, pz1);
-      t1 = partons[jParton].Time();
-      pdg1 = partons[jParton].PDG();
-      if (pdg1 == 0) continue;
+      if (partons[jParton].IsUsed()) continue;
 
-      // std::cout<<"x0 "<<x0<<", y0 "<<y0<<", z0 "<<z0<<", x1 "<<x1<<", y1 "<<y1<<", z1 "<<z1<<std::endl;
+      int pdg1 = partons[jParton].PDG();
+      float x1 = partons[jParton].X(), y1 = partons[jParton].Y(), z1 = partons[jParton].Z();
+      float px1 = partons[jParton].Px(), py1 = partons[jParton].Py(), pz1 = partons[jParton].Pz();
+      float t1 = partons[jParton].Time();
 
+      //临时的x0, y0, z0, x1, y1, z1，用来做move on，move on会改变这些值
       float x0_tmp = x0, y0_tmp = y0, z0_tmp = z0;
       float x1_tmp = x1, y1_tmp = y1, z1_tmp = z1;
 
+
       float d = distance3DMoveOn(x0_tmp, y0_tmp, z0_tmp, x1_tmp, y1_tmp, z1_tmp, px0, py0, pz0, px1, py1, pz1, t0, t1);
+
       float d_meson = d; // 这里是为了下面的pi0的特殊处理
       float d_diquark = d;
 
       if (pdg0 * pdg1 < 0) {
         // 如果说是 u-ubar 或者 d-dbar，那么查表可以得到一个介子的pdg
         int pdg_me_tmp = LookupMesonSpecies(pdg0, pdg1);
+        
+        // 临时的px, py, pz，用来做mass varify，mass varify会改变这些值
         float px_me_tmp = 0, py_me_tmp = 0, pz_me_tmp = 0;
-        bool isMassValid = MassVarify(pdg_me_tmp, pdg0, pdg1, px_me, py_me, pz_me, px0, py0, pz0, px1, py1, pz1);
+        bool isMassValid = MassVarify(pdg_me_tmp, pdg0, pdg1, px_me_tmp, py_me_tmp, pz_me_tmp, px0, py0, pz0, px1, py1, pz1);
+
+        // 设置50%的概率为pi0，50%的概率这次不生成，即让距离变得无限大
         if (pdg_me_tmp == 111) {
-          // 我们设置50%的概率为pi0，50%的概率这次不生成，即让距离变得无限大
           if(static_cast<bool>(par::zero_or_one(par::gen))) d_meson = std::numeric_limits<float>::max();
         }
+
         if (isMassValid && d_meson < d_meson_min) {
-          d_meson_min = d_meson;
+          d_meson_min = d_meson; // 更新最小距离
           meson_quark_label[1] = jParton;
+
+          // 本次生成的介子：
           pdg_me = pdg_me_tmp;
-          px_me = px_me_tmp, py_me = py_me_tmp, pz_me = pz_me_tmp;
           x_me = (x0_tmp + x1_tmp) / 2, y_me = (y0_tmp + y1_tmp) / 2, z_me = (z0_tmp + z1_tmp) / 2;
+          px_me = px_me_tmp, py_me = py_me_tmp, pz_me = pz_me_tmp;
           t_me = t0 > t1 ? t0 : t1; // 取最大的时间
         }
+
       } else if (pdg0 * pdg1 > 0) {
+
         // 只可能是di-quark
         if(d_diquark < d_diquark_min) {
-          d_diquark_min = d_diquark;
+          d_diquark_min = d_diquark; // 更新最小距离
           diquark_quark_label[1] = jParton;
-          if (nSerialLastDiquark != -1) isPartonUsedAsDiquarkThisLoop[nSerialLastDiquark] = false;
-          isPartonUsedAsDiquarkThisLoop[jParton] = true;
-          // 好像把label记下来就行了，不需要更新x_di, y_di, z_di, t_di
+
+          // 找到了新的di-quark，将jParton标记为已使用
+          partons[jParton].LabelAsUsedByDiQuark();
+          if (nSerialLastDiquark != -1) {
+            // 将上一个备选di-quark中的标记清除
+            partons[nSerialLastDiquark].ClearLabelAsUsedByDiQuark();
+          }
           nSerialLastDiquark = jParton;
         }
-      } else continue;
+      } else {
+        continue; // 不会出现这种情况
+      }
     }
-    if (diquark_quark_label[1] == -1 || meson_quark_label[1] == -1) continue;
 
-    //这时候di-quark已经找到了,我们需要找到一个quark来组成重子
-    for (int kParton = iParton + 1; kParton < nPartons; kParton++) {
-      if (isThisPartonUsed[kParton]) continue;
-      if (isPartonUsedAsDiquarkThisLoop[kParton]) continue;
-      // 第2个parton
-      int pdg2 = 0;
-      float x2 = 0, y2 = 0, z2 = 0;
-      float px2 = 0, py2 = 0, pz2 = 0;
-      float t2 = 0;
-      pdg2 = partons[kParton].PDG();
-      if (pdg0 * pdg2 < 0) continue; // 重子的三个夸克必须同号,pdg0和pdg1已经同号
-      partons[kParton].GetPosition(x2, y2, z2);
-      partons[kParton].GetMomentum(px2, py2, pz2);
-      t2 = partons[kParton].Time();
+    // 查看是否找到了meson
+    bool isThereMeson = meson_quark_label[1] != -1;
+    // 查看是否找到了di-quark
+    bool isThereDiquark = diquark_quark_label[1] != -1;
+    bool isThereBaryon = false;
 
-      // 第0个parton
-      float x0_tmp = x0, y0_tmp = y0, z0_tmp = z0;
+    int pdg1 = 0;
+    float x1 = 0, y1 = 0, z1 = 0;
+    float px1 = 0, py1 = 0, pz1 = 0;
+    float t1 = 0;
 
-      // 第1个parton
-      int pdg1 = 0;
-      float x1_tmp = 0, y1_tmp = 0, z1_tmp = 0;
-      float px1 = 0, py1 = 0, pz1 = 0;
-      float t1 = 0;
-      // 根据记录的di-quark的label，找到第1个quark的位置
+    // 找到di-quark或者meson的quark
+    if (isThereDiquark) {
+      //一个简单的检查,确保iParton和diquark_quark_label[0]是同一个quark
+      if (partons[iParton].GetSerial() != partons[diquark_quark_label[0]].GetSerial()) {
+        std::cerr<<"Error: Di-quark quark0 is not the same as partons[diquark_quark_label[0]]"<<std::endl;
+        std::abort();
+      }
+      // 第1个parton(用于生成di-quark的parton,用diquark_quark_label[1]标记了)
       pdg1 = partons[diquark_quark_label[1]].PDG();
-      partons[diquark_quark_label[1]].GetPosition(x1_tmp, y1_tmp, z1_tmp);
-      partons[diquark_quark_label[1]].GetMomentum(px1, py1, pz1);
+      x1 = partons[diquark_quark_label[1]].X(), y1 = partons[diquark_quark_label[1]].Y(), z1 = partons[diquark_quark_label[1]].Z();
+      px1 = partons[diquark_quark_label[1]].Px(), py1 = partons[diquark_quark_label[1]].Py(), pz1 = partons[diquark_quark_label[1]].Pz();
       t1 = partons[diquark_quark_label[1]].Time();
-
-      float px_ba_tmp = 0, py_ba_tmp = 0, pz_ba_tmp = 0;
-      int pdg_ba_tmp = LookupBaryonSpecies(pdg0, pdg1, pdg2);
-      bool isMassValid = MassVarify(pdg_ba_tmp, pdg0, pdg1, pdg2, px_ba_tmp, py_ba_tmp, pz_ba_tmp, px0, py0, pz0, px1, py1, pz1, px2, py2, pz2);
-
-      float d_baryon = perimeterMoveOn(x0_tmp, y0_tmp, z0_tmp, x1_tmp, y1_tmp, z1_tmp, x2, y2, z2, px0, py0, pz0, px1, py1, pz1, px2, py2, pz2, t0, t1, t2);
-      d_baryon = d_baryon / 3.; // 周长的距离除以3，得到平均距离
-      // std::cout<<"pdg0: "<<pdg0<<", pdg1: "<<pdg1<<", pdg2: "<<pdg2<<", d_baryon: "<<d_baryon<<", d_TStruct: "<<d_TStruct<<std::endl;
-
-      if (isMassValid && d_baryon < d_baryon_min) {
-        d_baryon_min = d_baryon;
-        baryon_quark_label[1] = diquark_quark_label[1];
-        baryon_quark_label[2] = kParton;
-        pdg_ba = pdg_ba_tmp;
-        px_ba = px_ba_tmp, py_ba = py_ba_tmp, pz_ba = pz_ba_tmp;
-        x_ba = (x0_tmp + x1_tmp + x2) / 3, y_ba = (y0_tmp + y1_tmp + y2) / 3, z_ba = (z0_tmp + z1_tmp + z2) / 3;
-        t_ba = (t0 > t1) ? ((t0 > t2) ? t0 : t2) : ((t1 > t2) ? t1 : t2); // 取最大的时间
-      }
     }
 
-    // 在这里，我们已经找到了一个hadron，我们需要将这个hadron加入到hadrons中，根据b_meson 和 r_bm * b_baryon的 大小关系
+    if (isThereMeson) {
+      if (partons[iParton].GetSerial() != partons[meson_quark_label[0]].GetSerial()) {
+        std::cerr<<"Error: quark0 is not the same as partons[meson_quark_label[0]]"<<std::endl;
+        std::abort();
+      }
+      // 对于meson事实上已经不需要读取第1个quark的信息了
+    }
 
-    if (d_meson_min < r_bm * d_baryon_min) {
-      hadrons.emplace_back(nHadronSerial++, pdg_me, x_me, y_me, z_me, px_me, py_me, pz_me, t_me, d_meson_min, partons[meson_quark_label[0]].GetSerial(), partons[meson_quark_label[1]].GetSerial(), -9999);
-      if(par::isDebug) {
-        hadrons.back().SetParton0Position(x0, y0, z0);
-        hadrons.back().SetParton1Position(partons[meson_quark_label[1]].X(), partons[meson_quark_label[1]].Y(), partons[meson_quark_label[1]].Z());
-        hadrons.back().SetParton2Position(-9999, -9999, -9999);
-      } 
-      isThisPartonUsed[meson_quark_label[0]] = true;
-      isThisPartonUsed[meson_quark_label[1]] = true;
+
+    if (isThereDiquark) {
+      //如果找到了di-quark，那么还需要找到第2个quark以组成一个baryon
+      for (int kParton = iParton + 1; kParton < nPartons; kParton++) {
+        if (partons[kParton].IsUsed()) continue;
+        if (partons[kParton].IsUsedAsDiQuark()) continue;
+
+        // 第0个parton(在iParton循环中的parton)
+        float x0_tmp = x0, y0_tmp = y0, z0_tmp = z0;
+        // 第1个parton(被diquark_quark_label[1]标记的parton)
+        float x1_tmp = x1, y1_tmp = y1, z1_tmp = z1;
+  
+        // 第2个parton(这个循环中的parton)
+        int pdg2 = partons[kParton].PDG();
+        if (pdg2 * pdg1 < 0) continue; // 保证第2个quark和第1个quark是同号的
+        float x2 = partons[kParton].X(), y2 = partons[kParton].Y(), z2 = partons[kParton].Z();
+        float px2 = partons[kParton].Px(), py2 = partons[kParton].Py(), pz2 = partons[kParton].Pz();
+        float t2 = partons[kParton].Time();
+
+        int pdg_ba_tmp = LookupBaryonSpecies(pdg0, pdg1, pdg2);
+        float px_ba_tmp = 0, py_ba_tmp = 0, pz_ba_tmp = 0;
+        bool isMassValid = MassVarify(pdg_ba_tmp, pdg0, pdg1, pdg2, px_ba_tmp, py_ba_tmp, pz_ba_tmp, px0, py0, pz0, px1, py1, pz1, px2, py2, pz2);
+  
+        float d_baryon = perimeterMoveOn(x0_tmp, y0_tmp, z0_tmp, x1_tmp, y1_tmp, z1_tmp, x2, y2, z2, px0, py0, pz0, px1, py1, pz1, px2, py2, pz2, t0, t1, t2);
+        d_baryon = d_baryon / 3.; // 周长的距离除以3，得到平均距离
+
+        if (isMassValid && d_baryon < d_baryon_min) {
+          d_baryon_min = d_baryon;
+          baryon_quark_label[1] = diquark_quark_label[1];
+          baryon_quark_label[2] = kParton;
+
+          pdg_ba = pdg_ba_tmp;
+          px_ba = px_ba_tmp, py_ba = py_ba_tmp, pz_ba = pz_ba_tmp;
+          x_ba = (x0_tmp + x1_tmp + x2) / 3, y_ba = (y0_tmp + y1_tmp + y2) / 3, z_ba = (z0_tmp + z1_tmp + z2) / 3;
+          t_ba = (t0 > t1) ? ((t0 > t2) ? t0 : t2) : ((t1 > t2) ? t1 : t2); // 取最大的时间
+          isThereBaryon = true;
+        }
+      }
+      partons[diquark_quark_label[1]].ClearLabelAsUsedByDiQuark();
     } else {
-      hadrons.emplace_back(nHadronSerial++, pdg_ba, x_ba, y_ba, z_ba, px_ba, py_ba, pz_ba, t_ba, d_baryon_min, partons[baryon_quark_label[0]].GetSerial(), partons[baryon_quark_label[1]].GetSerial(), partons[baryon_quark_label[2]].GetSerial());
-      if(par::isDebug) {
-        hadrons.back().SetParton0Position(x0, y0, z0);
-        hadrons.back().SetParton1Position(partons[baryon_quark_label[1]].X(), partons[baryon_quark_label[1]].Y(), partons[baryon_quark_label[1]].Z());
-        hadrons.back().SetParton2Position(partons[baryon_quark_label[2]].X(), partons[baryon_quark_label[2]].Y(), partons[baryon_quark_label[2]].Z());
-      }
-      isThisPartonUsed[baryon_quark_label[0]] = true;
-      isThisPartonUsed[baryon_quark_label[1]] = true;
-      isThisPartonUsed[baryon_quark_label[2]] = true;
+      // 如果没有找到di-quark，那么也不可能找到baryon
+      isThereBaryon = false;
     }
+
+    if(!isThereMeson && !isThereBaryon) {
+      // 如果没有找到meson和diquark，那么这个parton就是一个孤立的parton，无法形成hadron
+      if(par::isDebug) std::cout<<"No meson or diquark found, this parton is isolated."<<std::endl;
+    }
+
+    // 在这里，我们已经找到了一个meson或者一个baryon
+    // 我们需要根据b_meson 和 r_bm * b_baryon的 大小关系，选择一个距离最小的，然后生成hadron将这个hadron加入到hadrons中
+    if (d_meson_min < r_bm * d_baryon_min) {
+      if (isThereMeson) {
+        hadrons.emplace_back(nHadronSerial++, pdg_me, x_me, y_me, z_me, px_me, py_me, pz_me, t_me, d_meson_min, partons[meson_quark_label[0]].GetSerial(), partons[meson_quark_label[1]].GetSerial(), -9999);
+        if(par::isDebug) {
+          hadrons.back().SetParton0Position(x0, y0, z0);
+          hadrons.back().SetParton1Position(partons[meson_quark_label[1]].X(), partons[meson_quark_label[1]].Y(), partons[meson_quark_label[1]].Z());
+          hadrons.back().SetParton2Position(-9999, -9999, -9999);
+        } 
+        partons[meson_quark_label[0]].LabelAsUsed();
+        partons[meson_quark_label[1]].LabelAsUsed();
+      }
+    } else if (d_meson_min > r_bm * d_baryon_min) {
+      if (isThereBaryon) {
+        hadrons.emplace_back(nHadronSerial++, pdg_ba, x_ba, y_ba, z_ba, px_ba, py_ba, pz_ba, t_ba, d_baryon_min, partons[baryon_quark_label[0]].GetSerial(), partons[baryon_quark_label[1]].GetSerial(), partons[baryon_quark_label[2]].GetSerial());
+        if(par::isDebug) {
+          hadrons.back().SetParton0Position(x0, y0, z0);
+          hadrons.back().SetParton1Position(partons[baryon_quark_label[1]].X(), partons[baryon_quark_label[1]].Y(), partons[baryon_quark_label[1]].Z());
+          hadrons.back().SetParton2Position(partons[baryon_quark_label[2]].X(), partons[baryon_quark_label[2]].Y(), partons[baryon_quark_label[2]].Z());
+        }
+        partons[baryon_quark_label[0]].LabelAsUsed();
+        partons[baryon_quark_label[1]].LabelAsUsed();
+        partons[baryon_quark_label[2]].LabelAsUsed();
+      }
+    }
+
+    if(par::isDebug) {
+      if (!partons[iParton].IsUsed()) {
+        std::cout<<"In this loop, parton "<<iParton<<" is not used, its PDG is "<<partons[iParton].PDG()<<std::endl;
+        std::cout<<"now d_meson_min: "<<d_meson_min<<" and d_baryon_min: "<<d_baryon_min<<std::endl;
+      }
+    }
+
   }
+
 
   // 如果还有没有被使用的parton，这些parton的数量理论上应该很少
   // 可以读取isThisPartonUsed数组，找到没有被使用的parton，然后将这些parton打包成一个vector<Parton>
   // 进行递归
   std::vector<Parton> partonsUnused;
-  for (int i = 0; i < nPartons; i++) {
-    if (!isThisPartonUsed[i]) {
-      partonsUnused.emplace_back(partons[i]);
+  for (auto parton : partons) {
+    if (!parton.IsUsed()) {
+      partonsUnused.push_back(parton);
     }
   }
 
   if(par::isDebug) {
-    std::cout<<"partonsUnused pdg:"<<std::endl;
+    std::cout<<"partonsUnused size: "<<partonsUnused.size()<<std::endl;
+    std::cout<<"partonsUnused PDG: ";
     for (int i = 0; i < partonsUnused.size(); i++) {
       std::cout<<partonsUnused[i].PDG()<< " ";
     }
