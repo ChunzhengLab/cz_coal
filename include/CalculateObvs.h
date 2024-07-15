@@ -153,6 +153,7 @@ class CalculateObvs {
     h_pt->Write();
     h_eta->Write();
     h_phi->Write();
+    h_pid->Write();
     // spectra
     for (int i = 0; i < 3; i++) h_pt_piLike[i]->Write();
     for (int i = 0; i < 2; i++) h_pt_la[i]->Write();
