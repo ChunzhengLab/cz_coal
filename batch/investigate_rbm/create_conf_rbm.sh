@@ -22,22 +22,24 @@ while IFS= read -r line; do
     fi
 
     # 创建不同 r_bm 值的目录和 .conf 文件
-    for r_bm in 0.1 0.3 0.5 0.7 0.9; do
-      output_dir="/storage/fdunphome/zhengqingwang/chunzheng/cz_coal/batch/investigate_rbm/r_bm_${r_bm}/${date_folder}"
+    for r_bm in 0.03 0.06 0.1 0.15 0.2; do
+      output_dir="/storage/fdunphome/wangchunzheng/cz_coal/investigate_rbm/r_bm_${r_bm}/${date_folder}"
       mkdir -p "$output_dir"
       cd "$output_dir" || { echo "Failed to enter $output_dir"; exit 1; }
 
       conf_file="${seq_number}.conf"
       cat >"$conf_file" <<EOL
 isDebug=false
-isWriteEvents=true
+isLocalDraw=false
+isWriteEvents=false
 isCalculateObvs=true
 isRemoveHFQuarks=true
-isEnableQuarkMoveOn=true
+isEnableQuarkMoveOn=false
 isEnableMassVarify=true
+isBalanceQuarkNumber=true
 eventType=kAMPT
 r_bm=${r_bm}
-flavourBreakTolerance=0
+flavourBreakTolerance=0.0001
 coalescenceAlgorithm=kFromParton
 inputFile=${line}
 outputFile=${output_dir}/data_coalHadrons-${seq_number}.root
@@ -67,8 +69,8 @@ while read -r date_folder count; do
   # 获取最大序号
   max_seq=$(echo "$sorted_seq" | tail -n 1)
 
-  for r_bm in 0.1 0.3 0.5 0.7 0.9; do
-    output_dir="/storage/fdunphome/zhengqingwang/chunzheng/cz_coal/batch/investigate_rbm/r_bm_${r_bm}/${date_folder}"
+  for r_bm in 0.03 0.06 0.1 0.15 0.2; do
+    output_dir="/storage/fdunphome/wangchunzheng/cz_coal/investigate_rbm/r_bm_${r_bm}/${date_folder}"
     
     # 创建 condor.sh 文件
     cat >"${output_dir}/condor.sh" <<EOL
@@ -84,7 +86,7 @@ Index=\$1
 # Config file should be in the current directory and named as <index>.conf
 Configuration="./\${Index}.conf"
 # Path to the executable
-Execute="../../../../../bin/Coalescence"
+Execute="/storage/fdunphome/wangchunzheng/cz_coal/bin/Coalescence"
 # Check if the configuration file exists
 if [ ! -f "\$Configuration" ]; then
   echo "Configuration file \${Configuration} not found!"

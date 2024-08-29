@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # 定义输出文件夹的根目录
-base_dir="/storage/fdunphome/wangchunzheng/cz_coal/batch/investigate_rbm"
+base_dir="/storage/fdunphome/wangchunzheng/cz_coal/investigate_rbm"
 
 # 创建一个目录来存储所有合并后的中间文件
 central_dir="${base_dir}/merged_files"
