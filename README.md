@@ -1,5 +1,5 @@
 
-### CZCOAL
+### CZ_COAL (abbre. as CZC)
 - A coalescence model for studying baryon azimuthal correlations and the background of CVE
 - CMake project (CMake version > 3.2.0)
 - C++20 is recommended and adapted to C++11 on PC farm. Root package required to read the root file.
