@@ -7,7 +7,7 @@
   - Base: Event class, Particle class (inherited by Parton class and Hadrons class), DistanceFun
   - Core: Coalescence class, CalculateObvs class
   - Process: EventReader class, EventWriter class
-- Included Utility Tools
+- Included utility tools
   - Random event generator: rand_parton_gen, with 2 run mode: kPureRandom and  kAMPTAnchored
   - Coalescence center comparator
   - Automatic path getter and job submission script generator create_conf.sh and sort_paths.py
