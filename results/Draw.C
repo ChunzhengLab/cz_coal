@@ -19,7 +19,7 @@ void Draw() {
   ci[3] = TColor::GetFreeColorIndex();
   color[3] = new TColor(ci[3], 65/255.,  182/255., 230/255.);//light blue
 
-  TFile *f = new TFile("obvs_coalHadrons-FinalMerged.root");
+  TFile *f = TFile::Open("obvs_coalHadrons-r_bm_0.0-FinalMerged.root");
 
   TH1D* h_mult = (TH1D*)f->Get("h_mult");
   TH1D* h_pt = (TH1D*)f->Get("h_pt");
@@ -55,22 +55,22 @@ void Draw() {
     h_gamma_lam_pro[i]->SetLineColor(ci[i]);
   }
 
-  p_v2_pt_lam[0] = (TProfile*)f->Get("p_v2_pt_lam");
-  p_v2_pt_pro[0] = (TProfile*)f->Get("p_v2_pt_pro");
-  p_v2_pt_lam[1] = (TProfile*)f->Get("p_v2_pt_antilam");
-  p_v2_pt_pro[1] = (TProfile*)f->Get("p_v2_pt_antipro");
+  // p_v2_pt_lam[0] = (TProfile*)f->Get("p_v2_pt_lam");
+  // p_v2_pt_pro[0] = (TProfile*)f->Get("p_v2_pt_pro");
+  // p_v2_pt_lam[1] = (TProfile*)f->Get("p_v2_pt_antilam");
+  // p_v2_pt_pro[1] = (TProfile*)f->Get("p_v2_pt_antipro");
 
-  for (int i = 0; i < 2; i++) {
-    p_v2_pt_lam[i]->SetMarkerColor(kRed);
-    p_v2_pt_pro[i]->SetLineColor(kBlue);
-    p_v2_pt_pro[i]->SetMarkerColor(kBlue);
-    p_v2_pt_lam[i]->SetLineColor(kRed);
-  }
+  // for (int i = 0; i < 2; i++) {
+  //   p_v2_pt_lam[i]->SetMarkerColor(kRed);
+  //   p_v2_pt_pro[i]->SetLineColor(kBlue);
+  //   p_v2_pt_pro[i]->SetMarkerColor(kBlue);
+  //   p_v2_pt_lam[i]->SetLineColor(kRed);
+  // }
 
-  p_v2_pt_lam[0]->SetMarkerStyle(kFullCircle);
-  p_v2_pt_pro[0]->SetMarkerStyle(kFullCircle);
-  p_v2_pt_lam[1]->SetMarkerStyle(kOpenSquare);
-  p_v2_pt_pro[1]->SetMarkerStyle(kOpenSquare);
+  // p_v2_pt_lam[0]->SetMarkerStyle(kFullCircle);
+  // p_v2_pt_pro[0]->SetMarkerStyle(kFullCircle);
+  // p_v2_pt_lam[1]->SetMarkerStyle(kOpenSquare);
+  // p_v2_pt_pro[1]->SetMarkerStyle(kOpenSquare);
 
   TLegend *leg = new TLegend(0.6,0.6,0.9,0.9);
   leg->SetNColumns(2);
@@ -79,20 +79,20 @@ void Draw() {
   leg->AddEntry(p_v2_pt_lam[1], "#bar{#Lambda}", "pl");
   leg->AddEntry(p_v2_pt_pro[1], "#bar{p}", "pl");
 
-  TCanvas *c1 = new TCanvas("cflow","cflow",400,400);
-  c1->cd()->DrawFrame(0., 0., 3, 0.2, ";p_{T} [GeV/c];v_{2}");
-  c1->cd()->SetGrid();
-  for (int i = 0; i < 2; i++) {
-    p_v2_pt_lam[i]->Draw("same P");
-    p_v2_pt_pro[i]->Draw("same P");
-  }
-  leg->Draw();
+  // TCanvas *c1 = new TCanvas("cflow","cflow",400,400);
+  // c1->cd()->DrawFrame(0., 0., 3, 0.2, ";p_{T} [GeV/c];v_{2}");
+  // c1->cd()->SetGrid();
+  // for (int i = 0; i < 2; i++) {
+  //   p_v2_pt_lam[i]->Draw("same P");
+  //   p_v2_pt_pro[i]->Draw("same P");
+  // }
+  // leg->Draw();
 
   TCanvas *c2 = new TCanvas("cObv","cObv",800,400);
   c2->Divide(2,1);
   c2->cd(1);
   c2->cd(1)->SetGrid();
-  TH2D* dummyDelta = new TH2D("dummyDelta", ";;#delta", 4, 0., 4.,1,-2e-3,2e-3);
+  TH2D* dummyDelta = new TH2D("dummyDelta", ";;#delta", 4, 0., 4.,1,-1e-2,1e-2);
   dummyDelta->SetStats(0);
   dummyDelta->GetXaxis()->SetBinLabel(1, "#Lambda-p");
   dummyDelta->GetXaxis()->SetBinLabel(2, "#Lambda-#bar{p}");
@@ -101,7 +101,7 @@ void Draw() {
   dummyDelta->Draw();
 
   c2->cd(2)->SetGrid();
-  TH2D* dummyGamma = new TH2D("dummyGamma", ";;#gamma", 4, 0., 4.,1,-5e-4,5e-4);
+  TH2D* dummyGamma = new TH2D("dummyGamma", ";;#gamma", 4, 0., 4.,1,-2e-3,2e-3);
   dummyGamma->SetStats(0);
   dummyGamma->GetXaxis()->SetBinLabel(1, "#Lambda-p");
   dummyGamma->GetXaxis()->SetBinLabel(2, "#Lambda-#bar{p}");

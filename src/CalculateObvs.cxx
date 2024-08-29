@@ -2,6 +2,7 @@
 #include "Event.h"
 #include "TBits.h"
 #include "Par.h"
+#include <TLorentzVector.h>
 
 
 namespace par {
@@ -103,6 +104,11 @@ void CalculateObvs::Process(std::vector<Hadron>& hadrons) {
     }
 
     if (abs(pdg) != 3122) continue; // 第一个粒子只选lambda(anti-lambda)
+    //快度Lambda |y| < 0.5
+    TLorentzVector lv;
+    lv.SetPtEtaPhiM(pt, eta, phi, 1.115683);
+    float y = lv.Rapidity();
+    if (abs(y) > 0.5) continue;
 
     for (int j = 0; j < hadrons.size(); j++) {
       if (i == j) continue;
@@ -123,17 +129,17 @@ void CalculateObvs::Process(std::vector<Hadron>& hadrons) {
       TBits bits_la_pi(4);
       TBits bits_la_pr(4);
       TBits bits_la_la(4);
-      // 0-3 -> lambda - pion
+      // lambda - pion
       bits_la_pi.SetBitNumber(0, pdg == 3122 && pdg_j == 211);
       bits_la_pi.SetBitNumber(1, pdg == 3122 && pdg_j == -211);
       bits_la_pi.SetBitNumber(2, pdg == -3122 && pdg_j == 211);
       bits_la_pi.SetBitNumber(3, pdg == -3122 && pdg_j == -211);
-      // 4-7 -> lambda - proton
+      // lambda - proton
       bits_la_pr.SetBitNumber(0, pdg == 3122 && pdg_j == 2112);
       bits_la_pr.SetBitNumber(1, pdg == 3122 && pdg_j == -2112);
       bits_la_pr.SetBitNumber(2, pdg == -3122 && pdg_j == 2112);
       bits_la_pr.SetBitNumber(3, pdg == -3122 && pdg_j == -2112);
-      // 8-11 -> lambda - lambda
+      // lambda - lambda
       bits_la_la.SetBitNumber(0, pdg == 3122 && pdg_j == 3122);
       bits_la_la.SetBitNumber(1, pdg == 3122 && pdg_j == -3122);
       bits_la_la.SetBitNumber(2, pdg == -3122 && pdg_j == 3122);

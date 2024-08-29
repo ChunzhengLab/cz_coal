@@ -50,10 +50,10 @@ int main(int argc, char** argv) {
   writer.Print();
 
   int nEvents = reader.GetNEvents();
+  nEvents = par::isDebug ? 30 : nEvents;
   if (par::isDebug) {
     std::cout << "Total number of events: " << nEvents << std::endl;
     std::cout << "For debug mode, only process the first 20 events" << std::endl;
-    nEvents = 20;
   }
 
   std::cout << "Start processing events" << std::endl;

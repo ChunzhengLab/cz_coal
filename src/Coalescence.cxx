@@ -7,6 +7,8 @@
 #include "DistanceFun.h"
 #include "TStopwatch.h"
 #include "Par.h"
+#include "TFile.h"
+#include "TGraph.h"
 
 bool Coalescence::initialized = false;
 std::map<BaryonCombination, int> Coalescence::baryonLookupTable;
@@ -245,9 +247,35 @@ void Coalescence::ProcessFromParton(std::vector<Parton> const &partons0, std::ve
   // 这种算法，每次循环必出现一个hadron
   // 随机化parton vector
 
+  std::unique_ptr<TFile> file;
+  std::unique_ptr<TGraph> g_quark_all;
+  std::unique_ptr<TGraph> g_anti_quark_all;
+  std::unique_ptr<TGraph> g_quark;
+  std::unique_ptr<TGraph> g_anti_quark;
+  std::unique_ptr<TGraph> g_meson;
+  std::unique_ptr<TGraph> g_baryon;
+  std::unique_ptr<TGraph> g_anti_baryon;
+  std::vector<std::unique_ptr<TGraph>> g_meson_shape;
+  std::vector<std::unique_ptr<TGraph>> g_baryon_shape;
+  // 不需要anti_baryon_shape
+  
+  if (par::isLocalDraw) {
+      file = std::unique_ptr<TFile>(new TFile("debug.root", "RECREATE"));
+      g_quark_all = std::unique_ptr<TGraph>(new TGraph());
+      g_anti_quark_all = std::unique_ptr<TGraph>(new TGraph());
+      g_quark = std::unique_ptr<TGraph>(new TGraph());
+      g_anti_quark = std::unique_ptr<TGraph>(new TGraph());
+      g_meson = std::unique_ptr<TGraph>(new TGraph());
+      g_baryon = std::unique_ptr<TGraph>(new TGraph());
+      g_anti_baryon = std::unique_ptr<TGraph>(new TGraph());
+      // 不需要anti_baryon_shape
+      // std::vector<TGraph*> g_anti_baryon_shape;
+  }
+
   auto partons = const_cast<std::vector<Parton>&>(partons0);
-  // std::shuffle(partons.begin(), partons.end(), par::gen);
+  std::shuffle(partons.begin(), partons.end(), par::gen);
   int nPartons = partons.size();
+  nPartons = par::isDebug ? 60 : nPartons;
 
   // 为了递归之后的hadron序列号连续
   int nHadronSerial = nLastHadronSerial;
@@ -259,12 +287,72 @@ void Coalescence::ProcessFromParton(std::vector<Parton> const &partons0, std::ve
     }
     // 如果是重夸克c = 4, b = 5, t = 6，直接标记为已使用
     if (par::isRemoveHFQuarks && (abs(partons[i].PDG()) > 3)) {
+      // std::cout << partons[i].GetSerial() << std::endl;
       partons[i].LabelAsUsed();
     }
     // 如果夸克的PDG是0（代表没有PDG信息），那么标记为已使用
     if (partons[i].PDG() == 0) {
       std::cerr<<partons[i].GetSerial()<<"th parton has PDG code 0, which is invalid."<<std::endl;
       partons[i].LabelAsUsed();
+    }
+    //debug z = 0
+    partons[i].SetPosition(partons[i].X(), partons[i].Y(), 0);
+  }
+
+  if (par::isBalanceQuarkNumber) {
+    // 如果启用了平衡夸克数，那么将正负夸克数平衡
+    // 1. 统计正负夸克数（可以用Lambda表达式）
+    int nPositiveQuark = std::count_if(partons.begin(), partons.end(), [](Parton p) { return p.PDG() > 0 && !p.IsUsed(); });
+    int nNegativeQuark = std::count_if(partons.begin(), partons.end(), [](Parton p) { return p.PDG() < 0 && !p.IsUsed(); });
+    int nQuarkToBeRemoved = std::abs(nPositiveQuark - nNegativeQuark);
+    // 2. 随机删除数量多的正夸克或者负夸克
+    if (nPositiveQuark > nNegativeQuark) {
+        for (int i = 0; i < nQuarkToBeRemoved; i++) {
+            // 收集所有符合条件且未被使用的正夸克
+            std::vector<Parton*> availableQuarks;
+            for (auto& parton : partons) {
+                if (parton.PDG() > 0 && !parton.IsUsed()) {
+                    availableQuarks.push_back(&parton);
+                }
+            }
+            // 如果没有可用的夸克则提前退出
+            if (availableQuarks.empty()) {
+                break;
+            }
+            // 随机选择一个
+            std::uniform_int_distribution<> dist(0, availableQuarks.size() - 1);
+            int index = dist(par::gen);
+            availableQuarks[index]->LabelAsUsed();
+        }
+    } else if (nPositiveQuark < nNegativeQuark) {
+        for (int i = 0; i < nQuarkToBeRemoved; i++) {
+            // 收集所有符合条件且未被使用的负夸克
+            std::vector<Parton*> availableQuarks;
+            for (auto& parton : partons) {
+                if (parton.PDG() < 0 && !parton.IsUsed()) {
+                    availableQuarks.push_back(&parton);
+                }
+            }
+            // 如果没有可用的夸克则提前退出
+            if (availableQuarks.empty()) {
+                break;
+            }
+            // 随机选择一个
+            std::uniform_int_distribution<> dist(0, availableQuarks.size() - 1);
+            int index = dist(par::gen);
+            availableQuarks[index]->LabelAsUsed();
+        }
+    }
+  }
+
+  //debug
+  if (par::isLocalDraw) {
+  for (int i = 0; i < nPartons; i++) {
+      if (partons[i].PDG() > 0) {
+        g_quark_all->AddPoint(partons[i].X(), partons[i].Y());
+      } else {
+        g_anti_quark_all->AddPoint(partons[i].X(), partons[i].Y());
+      }
     }
   }
 
@@ -311,7 +399,6 @@ void Coalescence::ProcessFromParton(std::vector<Parton> const &partons0, std::ve
       //临时的x0, y0, z0, x1, y1, z1，用来做move on，move on会改变这些值
       float x0_tmp = x0, y0_tmp = y0, z0_tmp = z0;
       float x1_tmp = x1, y1_tmp = y1, z1_tmp = z1;
-
 
       float d = distance3DMoveOn(x0_tmp, y0_tmp, z0_tmp, x1_tmp, y1_tmp, z1_tmp, px0, py0, pz0, px1, py1, pz1, t0, t1);
 
@@ -444,6 +531,11 @@ void Coalescence::ProcessFromParton(std::vector<Parton> const &partons0, std::ve
       if(par::isDebug) std::cout<<"No meson or diquark found, this parton is isolated."<<std::endl;
     }
 
+    if(par::isDebug) {
+      std::cout<<"d_meson_min" << d_meson_min << std::endl;
+      std::cout<<"r_bm * d_baryon_min" << r_bm * d_baryon_min << std::endl;
+    }
+
     // 在这里，我们已经找到了一个meson或者一个baryon
     // 我们需要根据b_meson 和 r_bm * b_baryon的 大小关系，选择一个距离最小的，然后生成hadron将这个hadron加入到hadrons中
     if (d_meson_min < r_bm * d_baryon_min) {
@@ -453,9 +545,29 @@ void Coalescence::ProcessFromParton(std::vector<Parton> const &partons0, std::ve
           hadrons.back().SetParton0Position(x0, y0, z0);
           hadrons.back().SetParton1Position(partons[meson_quark_label[1]].X(), partons[meson_quark_label[1]].Y(), partons[meson_quark_label[1]].Z());
           hadrons.back().SetParton2Position(-9999, -9999, -9999);
-        } 
+        }
         partons[meson_quark_label[0]].LabelAsUsed();
         partons[meson_quark_label[1]].LabelAsUsed();
+
+        if(par::isLocalDraw) {
+          // std::cout<<partons[meson_quark_label[0]].GetSerial()<<std::endl;
+          // std::cout<<partons[meson_quark_label[1]].GetSerial()<<std::endl;
+          if (partons[meson_quark_label[0]].PDG() < 0) {
+            g_anti_quark->AddPoint(partons[meson_quark_label[0]].X(), partons[meson_quark_label[0]].Y());
+          } else {
+            g_quark->AddPoint(partons[meson_quark_label[0]].X(), partons[meson_quark_label[0]].Y());
+          }
+          if (partons[meson_quark_label[1]].PDG() < 0) {
+            g_anti_quark->AddPoint(partons[meson_quark_label[1]].X(), partons[meson_quark_label[1]].Y());
+          } else {
+            g_quark->AddPoint(partons[meson_quark_label[1]].X(), partons[meson_quark_label[1]].Y());
+          }
+          g_meson->AddPoint(x_me, y_me);
+          std::unique_ptr<TGraph> g_meson_shape_tmp = std::unique_ptr<TGraph>(new TGraph());
+          g_meson_shape_tmp->SetPoint(0, partons[meson_quark_label[0]].X(), partons[meson_quark_label[0]].Y());
+          g_meson_shape_tmp->SetPoint(1, partons[meson_quark_label[1]].X(), partons[meson_quark_label[1]].Y());
+          g_meson_shape.emplace_back(std::move(g_meson_shape_tmp));
+        }
       }
     } else if (d_meson_min > r_bm * d_baryon_min) {
       if (isThereBaryon) {
@@ -468,6 +580,35 @@ void Coalescence::ProcessFromParton(std::vector<Parton> const &partons0, std::ve
         partons[baryon_quark_label[0]].LabelAsUsed();
         partons[baryon_quark_label[1]].LabelAsUsed();
         partons[baryon_quark_label[2]].LabelAsUsed();
+
+        if(par::isLocalDraw) {
+          if (partons[baryon_quark_label[0]].PDG() < 0) {
+            g_anti_quark->AddPoint(partons[baryon_quark_label[0]].X(), partons[baryon_quark_label[0]].Y());
+          } else {
+            g_quark->AddPoint(partons[baryon_quark_label[0]].X(), partons[baryon_quark_label[0]].Y());
+          }
+          if (partons[baryon_quark_label[1]].PDG() < 0) {
+            g_anti_quark->AddPoint(partons[baryon_quark_label[1]].X(), partons[baryon_quark_label[1]].Y());
+          } else {
+            g_quark->AddPoint(partons[baryon_quark_label[1]].X(), partons[baryon_quark_label[1]].Y());
+          }
+          if (partons[baryon_quark_label[2]].PDG() < 0) {
+            g_anti_quark->AddPoint(partons[baryon_quark_label[2]].X(), partons[baryon_quark_label[2]].Y());
+          } else {
+            g_quark->AddPoint(partons[baryon_quark_label[2]].X(), partons[baryon_quark_label[2]].Y());
+          }
+          if (pdg_ba > 0) {
+            g_baryon->AddPoint(x_ba, y_ba);
+          } else {
+            g_anti_baryon->AddPoint(x_ba, y_ba);
+          }
+          std::unique_ptr<TGraph> g_baryon_shape_tmp = std::unique_ptr<TGraph>(new TGraph());
+          g_baryon_shape_tmp->SetPoint(0, partons[baryon_quark_label[0]].X(), partons[baryon_quark_label[0]].Y());
+          g_baryon_shape_tmp->SetPoint(1, partons[baryon_quark_label[1]].X(), partons[baryon_quark_label[1]].Y());
+          g_baryon_shape_tmp->SetPoint(2, partons[baryon_quark_label[2]].X(), partons[baryon_quark_label[2]].Y());
+          g_baryon_shape_tmp->SetPoint(3, partons[baryon_quark_label[0]].X(), partons[baryon_quark_label[0]].Y());
+          g_baryon_shape.emplace_back(std::move(g_baryon_shape_tmp));
+        }
       }
     }
 
@@ -478,6 +619,24 @@ void Coalescence::ProcessFromParton(std::vector<Parton> const &partons0, std::ve
       }
     }
 
+  }
+
+  if(par::isLocalDraw) {
+    file->cd();
+    g_quark_all->Write("quark_all");
+    g_anti_quark_all->Write("anti_quark_all");
+    g_quark->Write("quark");
+    g_anti_quark->Write("anti_quark");
+    g_meson->Write("meson");
+    g_baryon->Write("baryon");
+    g_anti_baryon->Write("anti_baryon");
+    for (int i = 0; i < g_meson_shape.size(); i++) {
+      g_meson_shape[i]->Write(Form("meson_shape_%d", i));
+    }
+    for (int i = 0; i < g_baryon_shape.size(); i++) {
+      g_baryon_shape[i]->Write(Form("baryon_shape_%d", i));
+    }
+    file->Close();
   }
 
 

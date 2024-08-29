@@ -49,7 +49,7 @@ public:
 
 };
 
-// Parton和Hadron的实现
+// Parton
 class Parton : public Particle {
   bool isUsed = false; //是否已经被使用
   bool isUsedAsDiQuark = false; //是否已经被使用作为di-quark
@@ -64,6 +64,7 @@ class Parton : public Particle {
   void ClearLabelAsUsedByDiQuark() { isUsedAsDiQuark = false; }
 };
 
+// Hadron
 class Hadron : public Particle {
   private:
   float distance; //距离

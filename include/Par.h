@@ -20,11 +20,13 @@ void printConfig();
 
 namespace par {
   extern bool isDebug;
+  extern bool isLocalDraw;
   extern bool isWriteEvents;
   extern bool isCalculateObvs;
   extern bool isRemoveHFQuarks;
   extern bool isEnableMassVarify;
   extern bool isEnableQuarkMoveOn;
+  extern bool isBalanceQuarkNumber;
   extern EventType eventType;
   //r_bm的默认值
   extern float r_bm;

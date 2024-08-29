@@ -14,4 +14,8 @@ testQuarkMoveOn
 test_data
 temp
 ref
+bug_test
+results
+results_balance
+old_investigate_rbm
 
