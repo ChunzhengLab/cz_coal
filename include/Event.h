@@ -1,5 +1,6 @@
 #ifndef EVENT_H
 #define EVENT_H
+#include "Par.h"
 #include "Particle.h"
 
 // AMPT Event
@@ -45,14 +46,12 @@ class Event {
 private:
   //构造函数
   int nSerial; // unique serial number for the event, 从1开始
-  int nTrks;
   std::vector<T> Particles;
 public:
-  Event(): nSerial(0), nTrks(0) {}
-  Event(int nSerial, int nTrks, std::vector<Hadron>&& particles): nSerial(nSerial), nTrks(nTrks), Particles(std::move(particles)) {}
+  Event(): nSerial(0) {}
+  Event(int nSerial, std::vector<Hadron>&& particles): nSerial(nSerial), Particles(std::move(particles)) {}
   Event(const PartonEventStruct& partonEventStruct) {
     nSerial = partonEventStruct.nevent;
-    nTrks = partonEventStruct.nparton;
     Particles.reserve(partonEventStruct.nparton);
     for (int i = 0; i < partonEventStruct.nparton; i++) {
         Particles.emplace_back(i, partonEventStruct.ID[i], 
@@ -65,11 +64,62 @@ public:
   const std::vector<T>& GetParticles() const { return Particles; }
   void SetSerial(int nSerial) { this->nSerial = nSerial; }
   int GetSerial() const { return nSerial; }
-  void SetNTrks(int nTrks) { this->nTrks = nTrks; }
-  int GetNTrks() const { return nTrks; }
+  void wash() {
+    //如果存在夸克的PDG是0（代表没有PDG信息），那么直接移除并报错
+    Particles.erase(std::remove_if(Particles.begin(), Particles.end(), [](const T& p) { if(p.PDG() == 0) std::cerr << p.GetSerial() << "th parton has PDG code 0, which is invalid." << std::endl; return p.PDG() == 0; }), Particles.end());
+
+    // 如果是重夸克c = 4, b = 5, t = 6，直接移除这个quark，用Lambda表达式，std::remove_if
+    if(par::isRemoveHFQuarks) {
+      Particles.erase(std::remove_if(Particles.begin(), Particles.end(), [](const T& p) { return abs(p.PDG()) > 3; }), Particles.end());
+    }
+
+    // 如果不启用quark move on，那么将所有parton的时间设置为0, 也就是所有parton都在同一时刻
+    if(!par::isEnableQuarkMoveOn) {
+      for (int i = 0; i < Particles.size(); i++) Particles[i].SetTime(0);
+    }
+
+    // 如果是要求忘记Z坐标或者LocalDraw，那么将所有parton的Z坐标设置为0
+    if(par::isForgetZ || par::isCreateAnimation) {
+      for (int i = 0; i < Particles.size(); i++) Particles[i].SetPosition(Particles[i].X(), Particles[i].Y(), 0);
+    }
+
+    //如果要求平衡夸克数，那么将正负夸克数平衡, 这里借用了LabalAsUsed(),希望以后可以改进！
+    if (par::isBalanceQuarkNumber) {
+      // 如果启用了平衡夸克数，那么将正负夸克数平衡
+      // 1. 保存多余的正夸克或者负夸克的index
+      std::vector<int> indexPositiveQuark, indexNegativeQuark;
+      for (int i = 0; i < Particles.size(); i++) {
+        if (Particles[i].PDG() > 0) indexPositiveQuark.push_back(i);
+        else if (Particles[i].PDG() < 0) indexNegativeQuark.push_back(i);
+        else std::cerr << "Warning: Quark PDG code is 0, please check the input." << std::endl;
+      }
+
+      // 2. 统计正负夸克数
+      int nPositiveQuark = indexPositiveQuark.size();
+      int nNegativeQuark = indexNegativeQuark.size();
+      int nQuarkToBeRemoved = std::abs(nPositiveQuark - nNegativeQuark);
+
+      // 3. 随机删除数量多的正夸克或者负夸克
+      if (nPositiveQuark > nNegativeQuark) {
+        std::shuffle(indexPositiveQuark.begin(), indexPositiveQuark.end(), par::gen);
+        // 只标记前 nQuarkToBeRemoved 个多余的正夸克
+        for (int i = 0; i < nQuarkToBeRemoved; ++i) {
+            Particles[indexPositiveQuark[i]].LabelAsUsed();
+        }
+      } else if (nPositiveQuark < nNegativeQuark) {
+        std::shuffle(indexNegativeQuark.begin(), indexNegativeQuark.end(), par::gen);
+        // 只标记前 nQuarkToBeRemoved 个多余的负夸克
+        for (int i = 0; i < nQuarkToBeRemoved; ++i) {
+            Particles[indexNegativeQuark[i]].LabelAsUsed();
+        }
+      }
+      Particles.erase(std::remove_if(Particles.begin(), Particles.end(), [](const T& p) { return p.IsUsed(); }), Particles.end());
+    }
+  }
+
 
   void Print() {
-    std::cout << "This is event " << nSerial << " with " << nTrks << " particles" << std::endl;
+    std::cout << "This is event " << nSerial << " with " << Particles.size() << " particles" << std::endl;
   }
 };
 

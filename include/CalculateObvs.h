@@ -181,7 +181,7 @@ class CalculateObvs {
       h_sphi_la_la[i]->Write();
     }
     file->Close();
-    // NOTE：这里需要delete吗？
+    // 这里需要delete吗？ 不需要，因为ROOT自动管理了内存
     // h_mult->Delete();
     // h_pt->Delete();
     // h_eta->Delete();
@@ -197,7 +197,7 @@ class CalculateObvs {
     std::cout <<"--------------------------" << std::endl;
     std::cout << "CalculateObvs:" << std::endl;
     std::cout << "result saved in " << file->GetName() << std::endl;
-    std::cout << "-----------------" << std::endl;
+    std::cout <<"--------------------------" << std::endl << std::endl;
   }
 
   CalculateObvs(const CalculateObvs&) = delete;

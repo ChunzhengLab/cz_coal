@@ -6,6 +6,8 @@
 #include <tuple>
 #include "Par.h" // Include the Par header
 #include "Particle.h" // Include the Particle header
+#include "TH1F.h"
+#include "TFile.h"
 
 // 使用 std::tuple 表示夸克的组合
 typedef std::tuple<int, int, int> BaryonCombination;
@@ -20,25 +22,58 @@ class Coalescence {
   //递归次数
   int nRecursionThisEvent = 0;
   int nPartonsThisEvent = 0;
+  bool isRejectByFlavourTolerance = false;
+  int nTrackRejectByMass = 0;
   // 重子信息的查找表
   static std::map<BaryonCombination, int> baryonLookupTable;
   // 介子信息的查找表
   static std::map<MesonCombination, int> mesonLookupTable;
-  void ResetRecursionForNextEvent() { this->nRecursionThisEvent = 0; this->nPartonsThisEvent = 0; }
+  void ResetRecursionForNextEvent() { this->nRecursionThisEvent = 0; this->nPartonsThisEvent = 0; this->isRejectByFlavourTolerance = false; this->nTrackRejectByMass = 0; }
+
+  //QA
+  TFile* f_QA;
+  TH1F* h_stats;
+  TH1F* h_track_mass_reject;
+  TH1F* h_coal_dis_baryon;
+  TH1F* h_coal_dis_meson;
+
+  // TH1F* h_stats = new TH1F("h_stats", "Coalescence stats", 10, 0, 10);
+  // TH1F* h_track_mass_reject = new TH1F("h_track_mass_reject", "Track mass reject", 1000, 0, 1000);
+  // TH1F* h_coal_dis_baryon = new TH1F("h_coal_dis_baryon", "Coalescence distance for baryon", 100, 0, 1);
+  // TH1F* h_coal_dis_meson = new TH1F("h_coal_dis_meson", "Coalescence distance for meson", 100, 0, 1);
+
   public:
   explicit Coalescence(float r_bm, CoalescenceAlgorithm coalescenceAlgorithm) : r_bm(r_bm) , coalescenceAlgorithm(coalescenceAlgorithm) {
     if (!initialized) {
       if (baryonLookupTable.empty()) InitBaryonLookupTable();
       if (mesonLookupTable.empty()) InitMesonLookupTable();
+      if (par::isWriteCoalQA) {
+        f_QA = new TFile("QA_Coalescence.root", "RECREATE");
+        if (!f_QA || f_QA->IsZombie()) {
+            std::cerr << "Error: Could not open QA_Coalescence.root for writing" << std::endl;
+            return;  // 终止后续操作
+        }
+        h_stats = new TH1F("h_stats", "Coalescence stats", 10, 0, 10);
+        h_stats->GetXaxis()->SetBinLabel(1, "Total Events");
+        h_stats->GetXaxis()->SetBinLabel(2, "Rejected by FlavourTole");
+        h_stats->GetXaxis()->SetBinLabel(3, "Recursion 1");
+        h_stats->GetXaxis()->SetBinLabel(4, "Recursion 2");
+        h_stats->GetXaxis()->SetBinLabel(5, "Recursion 3");
+        h_stats->GetXaxis()->SetBinLabel(6, "Rejected by recursion");
+        h_track_mass_reject = new TH1F("h_track_mass_reject", "Track mass reject", 1000, 0, 1e6);
+        h_coal_dis_baryon = new TH1F("h_coal_dis_baryon", "Coalescence distance for baryon", 1000, 0, 10);
+        h_coal_dis_meson = new TH1F("h_coal_dis_meson", "Coalescence distance for meson", 1000, 0, 10);
+      }
       initialized = true;
     }
   }
+
   bool IsInitialized() const { return initialized; }
-  bool MassVarify(const int genPdg, const int pdg0, const int pdg1, float& genpx, float& genpy, float& genpz, const float px0, const float py0, const float pz0, const float px1, const float py1, const float pz1);
-  bool MassVarify(const int genPdg, const int pdg0, const int pdg1, const int pdg2, float& genpx, float& genpy, float& genpz, const float px0, const float py0, const float pz0, const float px1, const float py1, const float pz1, const float px2, const float py2, const float pz2);
+  bool DeriveHadronPxPyPz(const int genPdg, const int pdg0, const int pdg1, float& genpx, float& genpy, float& genpz, const float px0, const float py0, const float pz0, const float px1, const float py1, const float pz1);
+  bool DeriveHadronPxPyPz(const int genPdg, const int pdg0, const int pdg1, const int pdg2, float& genpx, float& genpy, float& genpz, const float px0, const float py0, const float pz0, const float px1, const float py1, const float pz1, const float px2, const float py2, const float pz2);
   void Process(std::vector<Parton> const &partons, std::vector<Hadron> &hadrons);
   void ProcessFromParton(std::vector<Parton> const &partons0, std::vector<Hadron> &hadrons, int nLastHadronSerial = 0);
-  void ProcessClassic(std::vector<Parton> const &partons, std::vector<Hadron> &hadrons);
+  // void ProcessClassic(std::vector<Parton> const &partons, std::vector<Hadron> &hadrons);
   int LookupSpecies(int pdg_quark_0, int pdg_quark_1, int pdg_quark_2);
   int LookupMesonSpecies(int pdg_quark_0, int pdg_quark_1);
   int LookupBaryonSpecies(int pdg_quark_0, int pdg_quark_1, int pdg_quark_2);
@@ -55,10 +90,20 @@ class Coalescence {
       std::cout << "FromParton" << std::endl;
     }
     std::cout << "Coalescence favour breaking tolerance: " << par::flavourBreakTolerance*100 << "%" << std::endl;
-    std::cout << "--------------------------" << std::endl;
+    std::cout << "--------------------------" << std::endl << std::endl;
   }
   ~Coalescence() {
-    // Do nothing
+    if (par::isWriteCoalQA && f_QA) {
+      if (f_QA->IsOpen()) {
+        // 写入所有的直方图并关闭文件
+        f_QA->cd();
+        if (h_stats) h_stats->Write();
+        if (h_track_mass_reject) h_track_mass_reject->Write();
+        if (h_coal_dis_baryon) h_coal_dis_baryon->Write();
+        if (h_coal_dis_meson) h_coal_dis_meson->Write();
+        f_QA->Close();
+      }
+    }
   }
 
   //TODO:如果效率不够，可能需要考虑从parton开始loop，而不是从距离开始loop

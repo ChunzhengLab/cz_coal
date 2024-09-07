@@ -21,7 +21,13 @@ public:
   int GetSerial() const { return nSerial; }
   void SetMomentum(float px, float py, float pz) { this->px = px; this->py = py; this->pz = pz; }
   void SetPosition(float x, float y, float z) { this->x = x; this->y = y; this->z = z; }
+  void SetXY(float x, float y) { this->x = x; this->y = y; }
+  void GetXY(float &x, float &y) const { x = this->x; y = this->y; }
+  void SetZ(float z) { this->z = z; }
   void GetMomentum(float &px, float &py, float &pz) const { px = this->px; py = this->py; pz = this->pz; }
+  void SetPxPy(float px, float py) { this->px = px; this->py = py; }
+  void GetPxPy(float &px, float &py) const { px = this->px; py = this->py; }
+  void SetPz(float pz) { this->pz = pz; }
   void GetPosition(float &x, float &y, float &z) const { x = this->x; y = this->y; z = this->z; }
   void SetPDG(int pdg) { this->pdg = pdg; }
   void SetTime(float time) { this->time = time; }

@@ -16,9 +16,6 @@ Event<Parton>& EventsReader::GetEvent(int iEvent) {
 void EventsReader::UpdateEvent(int iEvent) {
   chain->GetEntry(iEvent);
   currentEvent = std::move(Event<Parton>(partonEventStruct));
-  if (par::isDebug) {
-    std::cout << ">>>>>>>>Move to Entry(iEvent)>>>>>>>" << iEvent << std::endl;
-  }
 }
 
 // AMPT event reader
@@ -75,12 +72,12 @@ bool EventsReader::InitTree(TString nameFile) {
 
   // 调试信息
   if (par::isDebug) {
-    std::cout << "-----------------" << std::endl;
+    std::cout <<"--------------------------" << std::endl;
     std::cout << "Initializing readin Tree" << std::endl;
     std::cout << "readin tree linked to partonEventStruct, but has not into any entry" << std::endl;
     std::cout << "readin tree has " << chain->GetEntries() << " entries" << std::endl;
     std::cout << "NOTE: Event ID starts from 1, but iEvent(entry) starts from 0" << std::endl;
-    std::cout << "-----------------" << std::endl;
+    std::cout << "--------------------------" << std::endl<<std::endl;
   }
   return true;
 }

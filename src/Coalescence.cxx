@@ -7,8 +7,9 @@
 #include "DistanceFun.h"
 #include "TStopwatch.h"
 #include "Par.h"
-#include "TFile.h"
 #include "TGraph.h"
+#include "TH2F.h"
+#include "TCanvas.h"
 
 bool Coalescence::initialized = false;
 std::map<BaryonCombination, int> Coalescence::baryonLookupTable;
@@ -18,7 +19,7 @@ void Coalescence::Process(std::vector<Parton> const &partons, std::vector<Hadron
   nPartonsThisEvent = partons.size();
   switch (coalescenceAlgorithm) {
     case CoalescenceAlgorithm::kClassic:
-      ProcessClassic(partons, hadrons);
+      // ProcessClassic(partons, hadrons);
       break;
     case CoalescenceAlgorithm::kFromParton:
       ProcessFromParton(partons, hadrons);
@@ -27,161 +28,174 @@ void Coalescence::Process(std::vector<Parton> const &partons, std::vector<Hadron
       std::cerr << "Unknown coalescence algorithm" << std::endl;
       break;
   }
+
+  if (par::isWriteCoalQA) {
+    h_stats->Fill(0.5);
+    if (isRejectByFlavourTolerance) h_stats->Fill(1.5);
+    if (nRecursionThisEvent == 1) h_stats->Fill(2.5);
+    if (nRecursionThisEvent == 2) h_stats->Fill(3.5);
+    if (nRecursionThisEvent == 3) h_stats->Fill(4.5);
+    if (nRecursionThisEvent > 3) h_stats->Fill(5.5);
+    h_track_mass_reject->Fill(nTrackRejectByMass);
+  }
+  std::cout<<nTrackRejectByMass<<std::endl;
+
+  ResetRecursionForNextEvent();
 }
 
-void Coalescence::ProcessClassic(std::vector<Parton> const &partons, std::vector<Hadron> &hadrons) {
-  std::cout<<"ProcessClassic: "<<std::endl;
-  std::cout<<"It will take a really long time, suggest parton number < 10"<<std::endl;
-  TStopwatch timer;
-  timer.Start();
+// void Coalescence::ProcessClassic(std::vector<Parton> const &partons, std::vector<Hadron> &hadrons) {
+//   std::cout<<"ProcessClassic: "<<std::endl;
+//   std::cout<<"It will take a really long time, suggest parton number < 10"<<std::endl;
+//   TStopwatch timer;
+//   timer.Start();
 
-  if(par::isDebug) std::cout<<"How many partons in this event for coalescence: "<<partons.size()<<std::endl;
+//   if(par::isDebug) std::cout<<"How many partons in this event for coalescence: "<<partons.size()<<std::endl;
   
-  // 将Hadron对象放入优先队列，使用优先队列来排序距离
-  std::priority_queue<Hadron, std::vector<Hadron>, std::greater<Hadron>> queHadronCadidates;
+//   // 将Hadron对象放入优先队列，使用优先队列来排序距离
+//   std::priority_queue<Hadron, std::vector<Hadron>, std::greater<Hadron>> queHadronCadidates;
 
-  //计算所有parton之间的空间距离 -> 介子
-  int nSerialHadron = 0;
-  for (int i = 0; i < partons.size(); i++) {
-    int pdg_quark_0 = partons[i].PDG();
-    int nSerial_0 = partons[i].GetSerial();
-    float x0, y0, z0;
-    float px0, py0, pz0;
-    partons[i].GetPosition(x0, y0, z0);
-    partons[i].GetMomentum(px0, py0, pz0);
+//   //计算所有parton之间的空间距离 -> 介子
+//   int nSerialHadron = 0;
+//   for (int i = 0; i < partons.size(); i++) {
+//     int pdg_quark_0 = partons[i].PDG();
+//     int nSerial_0 = partons[i].GetSerial();
+//     float x0, y0, z0;
+//     float px0, py0, pz0;
+//     partons[i].GetPosition(x0, y0, z0);
+//     partons[i].GetMomentum(px0, py0, pz0);
 
-    // 从i+1开始，避免重复计算
-    for (int j = i + 1; j < partons.size(); j++) {
-      int pdg_quark_1 = partons[j].PDG();
-      //如果前两个夸克同号，则已经不可能是介子，可以直接跳过
-      //采用异或运算符判断两个数是否异号
-      if (pdg_quark_0 * pdg_quark_1 > 0) {
-        continue;
-      }
-      int nSerial_1 = partons[j].GetSerial();
+//     // 从i+1开始，避免重复计算
+//     for (int j = i + 1; j < partons.size(); j++) {
+//       int pdg_quark_1 = partons[j].PDG();
+//       //如果前两个夸克同号，则已经不可能是介子，可以直接跳过
+//       //采用异或运算符判断两个数是否异号
+//       if (pdg_quark_0 * pdg_quark_1 > 0) {
+//         continue;
+//       }
+//       int nSerial_1 = partons[j].GetSerial();
 
-      int pdg_meson = 0;
-      pdg_meson = LookupSpecies(partons[i].PDG(), partons[j].PDG(), 0);
-      if (pdg_meson == 0) continue;
+//       int pdg_meson = 0;
+//       pdg_meson = LookupSpecies(partons[i].PDG(), partons[j].PDG(), 0);
+//       if (pdg_meson == 0) continue;
 
-      float x1, y1, z1;
-      float px1, py1, pz1;
-      partons[j].GetPosition(x1, y1, z1);
-      partons[j].GetMomentum(px1, py1, pz1);
+//       float x1, y1, z1;
+//       float px1, py1, pz1;
+//       partons[j].GetPosition(x1, y1, z1);
+//       partons[j].GetMomentum(px1, py1, pz1);
 
-      float d_meson = distance3D(x0, y0, z0, x1, y1, z1);
-      // 介子不乘系数
-      float d = d_meson;
+//       float d_meson = distance3D(x0, y0, z0, x1, y1, z1);
+//       // 介子不乘系数
+//       float d = d_meson;
 
-      nSerialHadron++;
-      Hadron hadronCadi(nSerialHadron, pdg_meson, (x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2, (px0 + px1) / 2, (py0 + py1) / 2, (pz0 + pz1) / 2, d, nSerial_0, nSerial_1, 0);
-      queHadronCadidates.push(hadronCadi);
-      // std::cout << "Distance between parton " << nSerial_0 << " and parton " << nSerial_1 << " is " << d << std::endl;
-    }
-  }
+//       nSerialHadron++;
+//       Hadron hadronCadi(nSerialHadron, pdg_meson, (x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2, (px0 + px1) / 2, (py0 + py1) / 2, (pz0 + pz1) / 2, d, nSerial_0, nSerial_1, 0);
+//       queHadronCadidates.push(hadronCadi);
+//       // std::cout << "Distance between parton " << nSerial_0 << " and parton " << nSerial_1 << " is " << d << std::endl;
+//     }
+//   }
 
-  std::cout << "queHadronCadidates size: " << queHadronCadidates.size() << std::endl;
-  timer.Stop();
-  if(par::isDebug) std::cout<<"Time for calculating meson distance: "<<timer.RealTime()<<" s"<<std::endl;
-  timer.Start();
+//   std::cout << "queHadronCadidates size: " << queHadronCadidates.size() << std::endl;
+//   timer.Stop();
+//   if(par::isDebug) std::cout<<"Time for calculating meson distance: "<<timer.RealTime()<<" s"<<std::endl;
+//   timer.Start();
 
-  // 计算三个parton的费马点和费马距离 -> 重子
-  for (int i = 0; i < partons.size(); i++) {
-    int pdg_quark_0 = partons[i].PDG();
-    int nSerial_0 = partons[i].GetSerial();
-    float x0, y0, z0;
-    float px0, py0, pz0;
-    partons[i].GetPosition(x0, y0, z0);
-    partons[i].GetMomentum(px0, py0, pz0);
+//   // 计算三个parton的费马点和费马距离 -> 重子
+//   for (int i = 0; i < partons.size(); i++) {
+//     int pdg_quark_0 = partons[i].PDG();
+//     int nSerial_0 = partons[i].GetSerial();
+//     float x0, y0, z0;
+//     float px0, py0, pz0;
+//     partons[i].GetPosition(x0, y0, z0);
+//     partons[i].GetMomentum(px0, py0, pz0);
     
-    // 从i+1开始，避免重复计算
-    for (int j = i + 1; j < partons.size(); j++) {
-      int pdg_quark_1 = partons[j].PDG();
-      //如果前两个夸克异号，则已经不可能是重子，可以直接跳过
-      if (pdg_quark_0 * pdg_quark_1 < 0) {
-        continue;
-      }
-      int nSerial_1 = partons[j].GetSerial();
-      float x1, y1, z1;
-      float px1, py1, pz1;
-      partons[j].GetPosition(x1, y1, z1);
-      partons[j].GetMomentum(px1, py1, pz1);
+//     // 从i+1开始，避免重复计算
+//     for (int j = i + 1; j < partons.size(); j++) {
+//       int pdg_quark_1 = partons[j].PDG();
+//       //如果前两个夸克异号，则已经不可能是重子，可以直接跳过
+//       if (pdg_quark_0 * pdg_quark_1 < 0) {
+//         continue;
+//       }
+//       int nSerial_1 = partons[j].GetSerial();
+//       float x1, y1, z1;
+//       float px1, py1, pz1;
+//       partons[j].GetPosition(x1, y1, z1);
+//       partons[j].GetMomentum(px1, py1, pz1);
 
-      // 从j+1开始，避免重复计算
-      for (int k = j + 1; k < partons.size(); k++) {
-        int pdg_quark_2 = partons[k].PDG();
-        //如果第三个夸克和前两个不同号，则已经不可能是重子，可以直接跳过
-        if (pdg_quark_0 * pdg_quark_1 * pdg_quark_2 < 0) {
-          continue;
-        }
-        int nSerial_2 = partons[k].GetSerial();
-        float x2, y2, z2;
-        float px2, py2, pz2;
-        partons[k].GetPosition(x2, y2, z2);
-        partons[k].GetMomentum(px2, py2, pz2);
-        int pdg_baryon = 0;
-        pdg_baryon = LookupSpecies(partons[i].PDG(), partons[j].PDG(), partons[k].PDG());
-        if (pdg_baryon == 0) continue;
+//       // 从j+1开始，避免重复计算
+//       for (int k = j + 1; k < partons.size(); k++) {
+//         int pdg_quark_2 = partons[k].PDG();
+//         //如果第三个夸克和前两个不同号，则已经不可能是重子，可以直接跳过
+//         if (pdg_quark_0 * pdg_quark_1 * pdg_quark_2 < 0) {
+//           continue;
+//         }
+//         int nSerial_2 = partons[k].GetSerial();
+//         float x2, y2, z2;
+//         float px2, py2, pz2;
+//         partons[k].GetPosition(x2, y2, z2);
+//         partons[k].GetMomentum(px2, py2, pz2);
+//         int pdg_baryon = 0;
+//         pdg_baryon = LookupSpecies(partons[i].PDG(), partons[j].PDG(), partons[k].PDG());
+//         if (pdg_baryon == 0) continue;
 
-        float x, y, z;
-        fermatPoint(x0, y0, z0, x1, y1, z1, x2, y2, z2, x, y, z);
-        float d_baryon = distance3D(x0, y0, z0, x, y, z);
-        //重子乘以系数
-        float d = d_baryon * r_bm;
+//         float x, y, z;
+//         fermatPoint(x0, y0, z0, x1, y1, z1, x2, y2, z2, x, y, z);
+//         float d_baryon = distance3D(x0, y0, z0, x, y, z);
+//         //重子乘以系数
+//         float d = d_baryon * r_bm;
 
-        nSerialHadron++;
-        Hadron hadronCadi(nSerialHadron, pdg_baryon, x, y, z, (px0 + px1 + px2) / 3, (py0 + py1 + py2) / 3, (pz0 + pz1 + pz2) / 3, d, nSerial_0, nSerial_1, nSerial_2);
-        queHadronCadidates.push(hadronCadi);
-        // std::cout << "Fermat point of parton " << nSerial_0 << ", parton " << nSerial_1 << " and parton " << nSerial_2 << " is (" << x << ", " << y << ", " << z << ") with distance " << d << std::endl;
-      }
-    }
-  }
-  timer.Stop();
-  if(par::isDebug) std::cout<<"Time for calculating baryon distance: "<<timer.RealTime()<<" s"<<std::endl;
-  timer.Start();
+//         nSerialHadron++;
+//         Hadron hadronCadi(nSerialHadron, pdg_baryon, x, y, z, (px0 + px1 + px2) / 3, (py0 + py1 + py2) / 3, (pz0 + pz1 + pz2) / 3, d, nSerial_0, nSerial_1, nSerial_2);
+//         queHadronCadidates.push(hadronCadi);
+//         // std::cout << "Fermat point of parton " << nSerial_0 << ", parton " << nSerial_1 << " and parton " << nSerial_2 << " is (" << x << ", " << y << ", " << z << ") with distance " << d << std::endl;
+//       }
+//     }
+//   }
+//   timer.Stop();
+//   if(par::isDebug) std::cout<<"Time for calculating baryon distance: "<<timer.RealTime()<<" s"<<std::endl;
+//   timer.Start();
 
-  // 存储已被选中的 parton 的序列号
-  std::set<int> selectedPartons;
-  bool isTimeToBreak = false;
-  // FIXME: 这里的条件可能有问题
-  // 我们来想一下，理论上说，上面的proiority queue里面，应该已经写入了所有的hadron了，
-  // 这也意味着，所有可能的parton组合都已经被写入了
-  // 这时候会存在某些parton没有被选中，的可能吗？
+//   // 存储已被选中的 parton 的序列号
+//   std::set<int> selectedPartons;
+//   bool isTimeToBreak = false;
+//   // FIXME: 这里的条件可能有问题
+//   // 我们来想一下，理论上说，上面的proiority queue里面，应该已经写入了所有的hadron了，
+//   // 这也意味着，所有可能的parton组合都已经被写入了
+//   // 这时候会存在某些parton没有被选中，的可能吗？
 
-  while (!queHadronCadidates.empty() && selectedPartons.size() < partons.size()) {
-    // 利用top()函数获取队列中的第一个元素
-    Hadron hc = queHadronCadidates.top();
-    // 利用pop()函数将其从队列中删除
-    queHadronCadidates.pop();
+//   while (!queHadronCadidates.empty() && selectedPartons.size() < partons.size()) {
+//     // 利用top()函数获取队列中的第一个元素
+//     Hadron hc = queHadronCadidates.top();
+//     // 利用pop()函数将其从队列中删除
+//     queHadronCadidates.pop();
 
-    // 确保所有的parton都只被选中一次
-    int nSerial0, nSerial1, nSerial2;
-    // 但是如果nSerial2 = 0 说明是介子，不需要检查nSerial2
-    hc.GetPartonSerials(nSerial0, nSerial1, nSerial2);
-    if (nSerial2 == 0) {
-      // nSerial2 == 0 介子，只需要检查nSerial0和nSerial1
-      if (selectedPartons.find(nSerial0) != selectedPartons.end() || selectedPartons.find(nSerial1) != selectedPartons.end()) {
-        continue;
-      }
-    } else {
-      // nSerial2 != 0 重子，需要检查nSerial0, nSerial1和nSerial2
-      if (selectedPartons.find(nSerial0) != selectedPartons.end() || selectedPartons.find(nSerial1) != selectedPartons.end() || selectedPartons.find(nSerial2) != selectedPartons.end()) {
-        continue;
-      } 
-    }
-    // 如果没有被选中，那么将这个hadron加入到hadrons中
-    selectedPartons.insert(nSerial0);
-    selectedPartons.insert(nSerial1);
-    if (nSerial2 != 0) selectedPartons.insert(nSerial2);
+//     // 确保所有的parton都只被选中一次
+//     int nSerial0, nSerial1, nSerial2;
+//     // 但是如果nSerial2 = 0 说明是介子，不需要检查nSerial2
+//     hc.GetPartonSerials(nSerial0, nSerial1, nSerial2);
+//     if (nSerial2 == 0) {
+//       // nSerial2 == 0 介子，只需要检查nSerial0和nSerial1
+//       if (selectedPartons.find(nSerial0) != selectedPartons.end() || selectedPartons.find(nSerial1) != selectedPartons.end()) {
+//         continue;
+//       }
+//     } else {
+//       // nSerial2 != 0 重子，需要检查nSerial0, nSerial1和nSerial2
+//       if (selectedPartons.find(nSerial0) != selectedPartons.end() || selectedPartons.find(nSerial1) != selectedPartons.end() || selectedPartons.find(nSerial2) != selectedPartons.end()) {
+//         continue;
+//       } 
+//     }
+//     // 如果没有被选中，那么将这个hadron加入到hadrons中
+//     selectedPartons.insert(nSerial0);
+//     selectedPartons.insert(nSerial1);
+//     if (nSerial2 != 0) selectedPartons.insert(nSerial2);
 
-    hadrons.emplace_back(hc);
-  }
+//     hadrons.emplace_back(hc);
+//   }
 
-  timer.Stop();
-  if(par::isDebug) std::cout<<"Time for selecting hadrons: "<<timer.RealTime()<<" s"<<std::endl;
+//   timer.Stop();
+//   if(par::isDebug) std::cout<<"Time for selecting hadrons: "<<timer.RealTime()<<" s"<<std::endl;
 
-  std::cout << "Hadron size: " << hadrons.size() << std::endl;
-}
+//   std::cout << "Hadron size: " << hadrons.size() << std::endl;
+// }
 
 
 int Coalescence::LookupSpecies(int pdg_quark_0, int pdg_quark_1, int pdg_quark_2) {
@@ -223,7 +237,7 @@ int Coalescence::LookupBaryonSpecies(int pdg_quark_0, int pdg_quark_1, int pdg_q
   // std::cout << "r_bm = " << r_bm << std::endl;
   // std::cout << "Coalescence to hadron" << std::endl;
   if (pdg_quark_0 == 0 || pdg_quark_1 == 0 || pdg_quark_2 == 0) {
-    std::cout << "Looking up baryon species, there is a quark without species, return 0" << std::endl;
+    std::cout << "Looking up baryon species, there is a quark don't know it's species, return 0" << std::endl;
     return 0;
   }
   // 三个夸克一定全是同号，否则返回0
@@ -244,118 +258,199 @@ int Coalescence::LookupBaryonSpecies(int pdg_quark_0, int pdg_quark_1, int pdg_q
 }
 
 void Coalescence::ProcessFromParton(std::vector<Parton> const &partons0, std::vector<Hadron> &hadrons, int nLastHadronSerial) {
-  // 这种算法，每次循环必出现一个hadron
-  // 随机化parton vector
-
+  // 这种算法，每次循环一般必出现一个hadron
+  auto partons = const_cast<std::vector<Parton>&>(partons0);
+  // ================================================================================
+  // For CreateAnimation
+  // ================================================================================
   std::unique_ptr<TFile> file;
+  std::unique_ptr<TCanvas> canvas;
+  // 一直保留的元素
   std::unique_ptr<TGraph> g_quark_all;
   std::unique_ptr<TGraph> g_anti_quark_all;
+  // 每次循环都要重新画的元素
   std::unique_ptr<TGraph> g_quark;
   std::unique_ptr<TGraph> g_anti_quark;
+  std::unique_ptr<TGraph> g_quark_start;
   std::unique_ptr<TGraph> g_meson;
   std::unique_ptr<TGraph> g_baryon;
   std::unique_ptr<TGraph> g_anti_baryon;
   std::vector<std::unique_ptr<TGraph>> g_meson_shape;
   std::vector<std::unique_ptr<TGraph>> g_baryon_shape;
-  // 不需要anti_baryon_shape
-  
-  if (par::isLocalDraw) {
-      file = std::unique_ptr<TFile>(new TFile("debug.root", "RECREATE"));
-      g_quark_all = std::unique_ptr<TGraph>(new TGraph());
-      g_anti_quark_all = std::unique_ptr<TGraph>(new TGraph());
-      g_quark = std::unique_ptr<TGraph>(new TGraph());
-      g_anti_quark = std::unique_ptr<TGraph>(new TGraph());
-      g_meson = std::unique_ptr<TGraph>(new TGraph());
-      g_baryon = std::unique_ptr<TGraph>(new TGraph());
-      g_anti_baryon = std::unique_ptr<TGraph>(new TGraph());
-      // 不需要anti_baryon_shape
-      // std::vector<TGraph*> g_anti_baryon_shape;
+  int frame_number = 1;
+  std::unique_ptr<TH2> dummy = std::unique_ptr<TH2>(new TH2F("", ";x;y", 1, -10, 10, 1, -10, 10));
+  if (par::isCreateAnimation) {
+    file = std::unique_ptr<TFile>(new TFile("particle_positon.root", "RECREATE"));
+    canvas = std::unique_ptr<TCanvas>(new TCanvas("frame_0", "frame_0", 800, 800));
+    g_quark_all = std::unique_ptr<TGraph>(new TGraph());
+    g_quark_all->SetMarkerStyle(kFullCircle);
+    g_quark_all->SetMarkerColor(kRed);
+    g_quark_all->SetMarkerSize(0.5);
+
+    g_anti_quark_all = std::unique_ptr<TGraph>(new TGraph());
+    g_anti_quark_all->SetMarkerStyle(kFullCircle);
+    g_anti_quark_all->SetMarkerColor(kBlue);
+    g_anti_quark_all->SetMarkerSize(0.5);
+
+    g_quark = std::unique_ptr<TGraph>(new TGraph());
+    g_quark->SetMarkerStyle(kOpenSquare);
+    g_quark->SetMarkerColor(kRed);
+    g_quark->SetMarkerSize(0.8);
+
+    g_anti_quark = std::unique_ptr<TGraph>(new TGraph());
+    g_anti_quark->SetMarkerStyle(kOpenSquare);
+    g_anti_quark->SetMarkerColor(kBlue);
+    g_anti_quark->SetMarkerSize(0.8);
+
+    g_quark_start = std::unique_ptr<TGraph>(new TGraph());
+    g_quark_start->SetMarkerStyle(kStar);
+    g_quark_start->SetMarkerColor(kBlack);
+    g_quark_start->SetMarkerSize(1.5);
+
+    g_meson = std::unique_ptr<TGraph>(new TGraph());
+    g_meson->SetMarkerStyle(kFullCircle);
+    g_meson->SetMarkerColor(kGreen);
+    g_meson->SetMarkerSize(1);
+
+    g_baryon = std::unique_ptr<TGraph>(new TGraph());
+    g_baryon->SetMarkerStyle(kFullCircle);
+    g_baryon->SetMarkerColor(kRed + 2);
+    g_baryon->SetMarkerSize(1.2);
+
+    g_anti_baryon = std::unique_ptr<TGraph>(new TGraph());
+    g_anti_baryon->SetMarkerStyle(kFullCircle);
+    g_anti_baryon->SetMarkerColor(kBlue + 2);
+    g_anti_baryon->SetMarkerSize(1.2);
+
+    // 如果需要制作动画，那么限制parton数量为60
+    partons.resize(60);
   }
+  // ================================================================================
 
-  auto partons = const_cast<std::vector<Parton>&>(partons0);
-  std::shuffle(partons.begin(), partons.end(), par::gen);
+  // 随机化parton vector，以保证夸克开始聚合的顺序是随机的
+  if(!par::isCreateAnimation && !par::isDebug) {
+    std::shuffle(partons.begin(), partons.end(), par::gen);
+  }
   int nPartons = partons.size();
-  nPartons = par::isDebug ? 60 : nPartons;
-
+  
   // 为了递归之后的hadron序列号连续
   int nHadronSerial = nLastHadronSerial;
 
-  for (int i = 0; i < nPartons; i++) {
-    // 如果不启用quark move on，那么将所有parton的时间设置为0, 也就是所有parton都在同一时刻
-    if (!par::isEnableQuarkMoveOn) {
-      partons[i].SetTime(0);
-    }
-    // 如果是重夸克c = 4, b = 5, t = 6，直接标记为已使用
-    if (par::isRemoveHFQuarks && (abs(partons[i].PDG()) > 3)) {
-      // std::cout << partons[i].GetSerial() << std::endl;
-      partons[i].LabelAsUsed();
-    }
-    // 如果夸克的PDG是0（代表没有PDG信息），那么标记为已使用
-    if (partons[i].PDG() == 0) {
-      std::cerr<<partons[i].GetSerial()<<"th parton has PDG code 0, which is invalid."<<std::endl;
-      partons[i].LabelAsUsed();
-    }
-    //debug z = 0
-    partons[i].SetPosition(partons[i].X(), partons[i].Y(), 0);
-  }
 
-  if (par::isBalanceQuarkNumber) {
-    // 如果启用了平衡夸克数，那么将正负夸克数平衡
-    // 1. 统计正负夸克数（可以用Lambda表达式）
-    int nPositiveQuark = std::count_if(partons.begin(), partons.end(), [](Parton p) { return p.PDG() > 0 && !p.IsUsed(); });
-    int nNegativeQuark = std::count_if(partons.begin(), partons.end(), [](Parton p) { return p.PDG() < 0 && !p.IsUsed(); });
-    int nQuarkToBeRemoved = std::abs(nPositiveQuark - nNegativeQuark);
-    // 2. 随机删除数量多的正夸克或者负夸克
-    if (nPositiveQuark > nNegativeQuark) {
-        for (int i = 0; i < nQuarkToBeRemoved; i++) {
-            // 收集所有符合条件且未被使用的正夸克
-            std::vector<Parton*> availableQuarks;
-            for (auto& parton : partons) {
-                if (parton.PDG() > 0 && !parton.IsUsed()) {
-                    availableQuarks.push_back(&parton);
-                }
-            }
-            // 如果没有可用的夸克则提前退出
-            if (availableQuarks.empty()) {
-                break;
-            }
-            // 随机选择一个
-            std::uniform_int_distribution<> dist(0, availableQuarks.size() - 1);
-            int index = dist(par::gen);
-            availableQuarks[index]->LabelAsUsed();
-        }
-    } else if (nPositiveQuark < nNegativeQuark) {
-        for (int i = 0; i < nQuarkToBeRemoved; i++) {
-            // 收集所有符合条件且未被使用的负夸克
-            std::vector<Parton*> availableQuarks;
-            for (auto& parton : partons) {
-                if (parton.PDG() < 0 && !parton.IsUsed()) {
-                    availableQuarks.push_back(&parton);
-                }
-            }
-            // 如果没有可用的夸克则提前退出
-            if (availableQuarks.empty()) {
-                break;
-            }
-            // 随机选择一个
-            std::uniform_int_distribution<> dist(0, availableQuarks.size() - 1);
-            int index = dist(par::gen);
-            availableQuarks[index]->LabelAsUsed();
-        }
+  // 支持夸克的xy坐标重采样
+  if(par::isResampleQuarkXY) {
+    std::unique_ptr<TH1F> h_x = std::unique_ptr<TH1F>(new TH1F("h_x", "h_x", 100, -10, 10));
+    std::unique_ptr<TH1F> h_y = std::unique_ptr<TH1F>(new TH1F("h_y", "h_y", 100, -10, 10));
+    for (int i = 0; i < nPartons; i++) {
+      h_x->Fill(partons[i].X());
+      h_y->Fill(partons[i].Y());
+    }
+    for (int i = 0; i < nPartons; i++) {
+      partons[i].SetXY(h_x->GetRandom(), h_y->GetRandom());
+    }
+  }
+  // 支持夸克的xy坐标随机旋转
+  if(par::isRandomRotateQuarkXY) {
+    for (int i = 0; i < nPartons; i++) {
+      float x, y;
+      partons[i].GetXY(x, y);
+      float dphi = std::uniform_real_distribution<float>(0, 2 * M_PI)(par::gen);
+      float x_new = x * cos(dphi) - y * sin(dphi);
+      float y_new = x * sin(dphi) + y * cos(dphi);
+      partons[i].SetXY(x_new, y_new);
+    }
+  }
+  // 支持夸克的xy坐标饼状抽样
+  if(par::isPiesampleXY) {
+    std::unique_ptr<TH1F> h_r = std::unique_ptr<TH1F>(new TH1F("h_r", "h_r", 100, 0, 10));
+    for (int i = 0; i < nPartons; i++) {
+      float x, y;
+      partons[i].GetXY(x, y);
+      float r = sqrt(x * x + y * y);
+      h_r->Fill(r);
+    }
+    float r_mean = h_r->GetMean();
+    float r_sigma = h_r->GetRMS();
+    for (int i = 0; i < nPartons; i++) {
+      float r = std::normal_distribution<float>(r_mean, r_sigma)(par::gen);
+      float phi = std::uniform_real_distribution<float>(0, 2 * M_PI)(par::gen);
+      float x_new = sqrt(r) * cos(phi);
+      float y_new = sqrt(r) * sin(phi);
+      partons[i].SetXY(x_new, y_new);
     }
   }
 
-  //debug
-  if (par::isLocalDraw) {
-  for (int i = 0; i < nPartons; i++) {
+  // 支持夸克的px, py重采样
+  if(par::isResampleQuarkPxPy) {
+    std::unique_ptr<TH1F> h_px = std::unique_ptr<TH1F>(new TH1F("h_px", "h_px", 100, -10, 10));
+    std::unique_ptr<TH1F> h_py = std::unique_ptr<TH1F>(new TH1F("h_py", "h_py", 100, -10, 10));
+    for (int i = 0; i < nPartons; i++) {
+      h_px->Fill(partons[i].Px());
+      h_py->Fill(partons[i].Py());
+    }
+    for (int i = 0; i < nPartons; i++) {
+      partons[i].SetPxPy(h_px->GetRandom(), h_py->GetRandom());
+    }
+  }
+  // 支持夸克的px, py随机旋转
+  if(par::isRandomRotateQuarkPxPy) {
+    for (int i = 0; i < nPartons; i++) {
+      float px, py;
+      partons[i].GetPxPy(px, py);
+      float dphi = std::uniform_real_distribution<float>(0, 2 * M_PI)(par::gen);
+      float px_new = px * cos(dphi) - py * sin(dphi);
+      float py_new = px * sin(dphi) + py * cos(dphi);
+      partons[i].SetPxPy(px_new, py_new);
+    }
+  }
+  // 支持夸克的px, py饼状抽样
+  if(par::isPiesamplePxPy) {
+    std::unique_ptr<TH1F> h_pT = std::unique_ptr<TH1F>(new TH1F("h_pT", "h_pT", 100, 0, 10));
+    for (int i = 0; i < nPartons; i++) {
+      float pT = sqrt(partons[i].Px() * partons[i].Px() + partons[i].Py() * partons[i].Py());
+      h_pT->Fill(pT);
+    }
+    float pT_mean = h_pT->GetMean();
+    float pT_sigma = h_pT->GetRMS();
+    for (int i = 0; i < nPartons; i++) {
+      float r = std::normal_distribution<float>(pT_mean, pT_sigma)(par::gen);
+      float phi = std::uniform_real_distribution<float>(0, 2 * M_PI)(par::gen);
+      float px_new = r * cos(phi);
+      float py_new = r * sin(phi);
+      partons[i].SetPxPy(px_new, py_new);
+    }
+  }
+
+  // ================================================================================
+  // For CreateAnimation
+  if (par::isCreateAnimation) {
+    int nQuark = 0;
+    int nAntiQuark = 0;
+    for (int i = 0; i < nPartons; i++) {
       if (partons[i].PDG() > 0) {
-        g_quark_all->AddPoint(partons[i].X(), partons[i].Y());
+        // g_quark_all->AddPoint(partons[i].X(), partons[i].Y());
+        // 改成setpoint, 以支持旧版本的ROOT
+        g_quark_all->SetPoint(nQuark, partons[i].X(), partons[i].Y());
+        nQuark++;
       } else {
-        g_anti_quark_all->AddPoint(partons[i].X(), partons[i].Y());
+        // g_anti_quark_all->AddPoint(partons[i].X(), partons[i].Y());
+        // 改成setpoint
+        g_anti_quark_all->SetPoint(nAntiQuark, partons[i].X(), partons[i].Y());
+        nAntiQuark++;
       }
     }
+    dummy->Draw();
+    g_quark_all->Draw("same P");
+    g_anti_quark_all->Draw("same P");
+    canvas->Update();
+    canvas->Write();
   }
+  // ================================================================================
 
+
+  // *=*=*=*=*=*=*=*=*=*=*=*=*=*=
+  // Start Coalescence
+  // *=*=*=*=*=*=*=*=*=*=*=*=*=*=
   for (int iParton = 0; iParton < nPartons; iParton++) {
     if (partons[iParton].IsUsed()) continue;
     // 第0个parton
@@ -363,6 +458,10 @@ void Coalescence::ProcessFromParton(std::vector<Parton> const &partons0, std::ve
     float x0 = partons[iParton].X(), y0 = partons[iParton].Y(), z0 = partons[iParton].Z();
     float px0 = partons[iParton].Px(), py0 = partons[iParton].Py(), pz0 = partons[iParton].Pz();
     float t0 = partons[iParton].Time();
+
+    if (par::isCreateAnimation) {
+      g_quark_start->SetPoint(g_quark_start->GetN(), x0, y0);
+    }
 
     // meson
     int pdg_me = 0;
@@ -411,7 +510,8 @@ void Coalescence::ProcessFromParton(std::vector<Parton> const &partons0, std::ve
         
         // 临时的px, py, pz，用来做mass varify，mass varify会改变这些值
         float px_me_tmp = 0, py_me_tmp = 0, pz_me_tmp = 0;
-        bool isMassValid = MassVarify(pdg_me_tmp, pdg0, pdg1, px_me_tmp, py_me_tmp, pz_me_tmp, px0, py0, pz0, px1, py1, pz1);
+        bool isMassValid = DeriveHadronPxPyPz(pdg_me_tmp, pdg0, pdg1, px_me_tmp, py_me_tmp, pz_me_tmp, px0, py0, pz0, px1, py1, pz1);
+        if (!isMassValid && par::isWriteCoalQA) nTrackRejectByMass++;
 
         // 设置50%的概率为pi0，50%的概率这次不生成，即让距离变得无限大
         if (pdg_me_tmp == 111) {
@@ -503,7 +603,8 @@ void Coalescence::ProcessFromParton(std::vector<Parton> const &partons0, std::ve
 
         int pdg_ba_tmp = LookupBaryonSpecies(pdg0, pdg1, pdg2);
         float px_ba_tmp = 0, py_ba_tmp = 0, pz_ba_tmp = 0;
-        bool isMassValid = MassVarify(pdg_ba_tmp, pdg0, pdg1, pdg2, px_ba_tmp, py_ba_tmp, pz_ba_tmp, px0, py0, pz0, px1, py1, pz1, px2, py2, pz2);
+        bool isMassValid = DeriveHadronPxPyPz(pdg_ba_tmp, pdg0, pdg1, pdg2, px_ba_tmp, py_ba_tmp, pz_ba_tmp, px0, py0, pz0, px1, py1, pz1, px2, py2, pz2);
+        if (!isMassValid && par::isWriteCoalQA) nTrackRejectByMass++;
   
         float d_baryon = perimeterMoveOn(x0_tmp, y0_tmp, z0_tmp, x1_tmp, y1_tmp, z1_tmp, x2, y2, z2, px0, py0, pz0, px1, py1, pz1, px2, py2, pz2, t0, t1, t2);
         d_baryon = d_baryon / 3.; // 周长的距离除以3，得到平均距离
@@ -528,13 +629,13 @@ void Coalescence::ProcessFromParton(std::vector<Parton> const &partons0, std::ve
 
     if(!isThereMeson && !isThereBaryon) {
       // 如果没有找到meson和diquark，那么这个parton就是一个孤立的parton，无法形成hadron
-      if(par::isDebug) std::cout<<"No meson or diquark found, this parton is isolated."<<std::endl;
+      if(par::isDebug) std::cout<<"No meson or baryon found: this parton is isolated, and should left by a unsuccessful pi0 coalescence"<<std::endl;
     }
 
-    if(par::isDebug) {
-      std::cout<<"d_meson_min" << d_meson_min << std::endl;
-      std::cout<<"r_bm * d_baryon_min" << r_bm * d_baryon_min << std::endl;
-    }
+    // if(par::isDebug) {
+    //   std::cout<<"d_meson_min = " << d_meson_min << std::endl;
+    //   std::cout<<"r_bm * d_baryon_min = " << r_bm * d_baryon_min << std::endl;
+    // }
 
     // 在这里，我们已经找到了一个meson或者一个baryon
     // 我们需要根据b_meson 和 r_bm * b_baryon的 大小关系，选择一个距离最小的，然后生成hadron将这个hadron加入到hadrons中
@@ -549,25 +650,24 @@ void Coalescence::ProcessFromParton(std::vector<Parton> const &partons0, std::ve
         partons[meson_quark_label[0]].LabelAsUsed();
         partons[meson_quark_label[1]].LabelAsUsed();
 
-        if(par::isLocalDraw) {
-          // std::cout<<partons[meson_quark_label[0]].GetSerial()<<std::endl;
-          // std::cout<<partons[meson_quark_label[1]].GetSerial()<<std::endl;
+        if(par::isCreateAnimation) {
           if (partons[meson_quark_label[0]].PDG() < 0) {
-            g_anti_quark->AddPoint(partons[meson_quark_label[0]].X(), partons[meson_quark_label[0]].Y());
+            g_anti_quark->SetPoint(g_anti_quark->GetN(), partons[meson_quark_label[0]].X(), partons[meson_quark_label[0]].Y());
           } else {
-            g_quark->AddPoint(partons[meson_quark_label[0]].X(), partons[meson_quark_label[0]].Y());
+            g_quark->SetPoint(g_quark->GetN(), partons[meson_quark_label[0]].X(), partons[meson_quark_label[0]].Y());
           }
           if (partons[meson_quark_label[1]].PDG() < 0) {
-            g_anti_quark->AddPoint(partons[meson_quark_label[1]].X(), partons[meson_quark_label[1]].Y());
+            g_anti_quark->SetPoint(g_anti_quark->GetN(), partons[meson_quark_label[1]].X(), partons[meson_quark_label[1]].Y());
           } else {
-            g_quark->AddPoint(partons[meson_quark_label[1]].X(), partons[meson_quark_label[1]].Y());
+            g_quark->SetPoint(g_quark->GetN(), partons[meson_quark_label[1]].X(), partons[meson_quark_label[1]].Y());
           }
-          g_meson->AddPoint(x_me, y_me);
+          g_meson->SetPoint(g_meson->GetN(), x_me, y_me);
           std::unique_ptr<TGraph> g_meson_shape_tmp = std::unique_ptr<TGraph>(new TGraph());
           g_meson_shape_tmp->SetPoint(0, partons[meson_quark_label[0]].X(), partons[meson_quark_label[0]].Y());
           g_meson_shape_tmp->SetPoint(1, partons[meson_quark_label[1]].X(), partons[meson_quark_label[1]].Y());
           g_meson_shape.emplace_back(std::move(g_meson_shape_tmp));
         }
+        if (par::isWriteCoalQA) h_coal_dis_meson->Fill(d_meson_min);
       }
     } else if (d_meson_min > r_bm * d_baryon_min) {
       if (isThereBaryon) {
@@ -581,26 +681,26 @@ void Coalescence::ProcessFromParton(std::vector<Parton> const &partons0, std::ve
         partons[baryon_quark_label[1]].LabelAsUsed();
         partons[baryon_quark_label[2]].LabelAsUsed();
 
-        if(par::isLocalDraw) {
+        if(par::isCreateAnimation) {
           if (partons[baryon_quark_label[0]].PDG() < 0) {
-            g_anti_quark->AddPoint(partons[baryon_quark_label[0]].X(), partons[baryon_quark_label[0]].Y());
+            g_anti_quark->SetPoint(g_anti_quark->GetN(), partons[baryon_quark_label[0]].X(), partons[baryon_quark_label[0]].Y());
           } else {
-            g_quark->AddPoint(partons[baryon_quark_label[0]].X(), partons[baryon_quark_label[0]].Y());
+            g_quark->SetPoint(g_quark->GetN(), partons[baryon_quark_label[0]].X(), partons[baryon_quark_label[0]].Y());
           }
           if (partons[baryon_quark_label[1]].PDG() < 0) {
-            g_anti_quark->AddPoint(partons[baryon_quark_label[1]].X(), partons[baryon_quark_label[1]].Y());
+            g_anti_quark->SetPoint(g_anti_quark->GetN(), partons[baryon_quark_label[1]].X(), partons[baryon_quark_label[1]].Y());
           } else {
-            g_quark->AddPoint(partons[baryon_quark_label[1]].X(), partons[baryon_quark_label[1]].Y());
+            g_quark->SetPoint(g_quark->GetN(), partons[baryon_quark_label[1]].X(), partons[baryon_quark_label[1]].Y());
           }
           if (partons[baryon_quark_label[2]].PDG() < 0) {
-            g_anti_quark->AddPoint(partons[baryon_quark_label[2]].X(), partons[baryon_quark_label[2]].Y());
+            g_anti_quark->SetPoint(g_anti_quark->GetN(), partons[baryon_quark_label[2]].X(), partons[baryon_quark_label[2]].Y());
           } else {
-            g_quark->AddPoint(partons[baryon_quark_label[2]].X(), partons[baryon_quark_label[2]].Y());
+            g_quark->SetPoint(g_quark->GetN(), partons[baryon_quark_label[2]].X(), partons[baryon_quark_label[2]].Y());
           }
           if (pdg_ba > 0) {
-            g_baryon->AddPoint(x_ba, y_ba);
+            g_baryon->SetPoint(g_baryon->GetN(), x_ba, y_ba);
           } else {
-            g_anti_baryon->AddPoint(x_ba, y_ba);
+            g_anti_baryon->SetPoint(g_anti_baryon->GetN(), x_ba, y_ba);
           }
           std::unique_ptr<TGraph> g_baryon_shape_tmp = std::unique_ptr<TGraph>(new TGraph());
           g_baryon_shape_tmp->SetPoint(0, partons[baryon_quark_label[0]].X(), partons[baryon_quark_label[0]].Y());
@@ -609,36 +709,48 @@ void Coalescence::ProcessFromParton(std::vector<Parton> const &partons0, std::ve
           g_baryon_shape_tmp->SetPoint(3, partons[baryon_quark_label[0]].X(), partons[baryon_quark_label[0]].Y());
           g_baryon_shape.emplace_back(std::move(g_baryon_shape_tmp));
         }
+        if (par::isWriteCoalQA) h_coal_dis_baryon->Fill(d_baryon_min);
       }
+    }
+
+    if(par::isCreateAnimation) {
+      canvas->SetName(Form("frame_%d", frame_number));
+      dummy->Draw();
+      //Draw all partons
+      // 只有当GetN() > 0时才画，否则会报错
+      if (g_quark_all->GetN() > 0) g_quark_all->Draw("same P");
+      if (g_anti_quark_all->GetN() > 0) g_anti_quark_all->Draw("same P");
+      if (g_quark_start->GetN() > 0) g_quark_start->Draw("same P");
+      if (g_quark->GetN() > 0) g_quark->Draw("same P");
+      if (g_anti_quark->GetN() > 0) g_anti_quark->Draw("same P");
+      if (g_meson->GetN() > 0) g_meson->Draw("same P");
+      if (g_baryon->GetN() > 0) g_baryon->Draw("same P");
+      if (g_anti_baryon->GetN() > 0) g_anti_baryon->Draw("same P");
+      for (int i = 0; i < g_meson_shape.size(); i++) {
+        g_meson_shape[i]->Draw("same L");
+      }
+      for (int i = 0; i < g_baryon_shape.size(); i++) {
+        g_baryon_shape[i]->Draw("same L");
+      }
+      frame_number++;
+      canvas->Update();
+      canvas->Write();
     }
 
     if(par::isDebug) {
       if (!partons[iParton].IsUsed()) {
-        std::cout<<"In this loop, parton "<<iParton<<" is not used, its PDG is "<<partons[iParton].PDG()<<std::endl;
+        std::cout<<"Parton "<<iParton<<" is not used, its PDG is "<<partons[iParton].PDG()<<std::endl;
         std::cout<<"now d_meson_min: "<<d_meson_min<<" and d_baryon_min: "<<d_baryon_min<<std::endl;
       }
     }
 
   }
 
-  if(par::isLocalDraw) {
-    file->cd();
-    g_quark_all->Write("quark_all");
-    g_anti_quark_all->Write("anti_quark_all");
-    g_quark->Write("quark");
-    g_anti_quark->Write("anti_quark");
-    g_meson->Write("meson");
-    g_baryon->Write("baryon");
-    g_anti_baryon->Write("anti_baryon");
-    for (int i = 0; i < g_meson_shape.size(); i++) {
-      g_meson_shape[i]->Write(Form("meson_shape_%d", i));
-    }
-    for (int i = 0; i < g_baryon_shape.size(); i++) {
-      g_baryon_shape[i]->Write(Form("baryon_shape_%d", i));
-    }
+  if(par::isCreateAnimation) {
+    canvas->Update();
+    canvas->Write();
     file->Close();
   }
-
 
   // 如果还有没有被使用的parton，这些parton的数量理论上应该很少
   // 可以读取isThisPartonUsed数组，找到没有被使用的parton，然后将这些parton打包成一个vector<Parton>
@@ -649,100 +761,97 @@ void Coalescence::ProcessFromParton(std::vector<Parton> const &partons0, std::ve
       partonsUnused.push_back(parton);
     }
   }
-
   if(par::isDebug) {
-    std::cout<<"partonsUnused size: "<<partonsUnused.size()<<std::endl;
-    std::cout<<"partonsUnused PDG: ";
+    std::cout<<"Number of partons left: "<<partonsUnused.size()<<std::endl;
     for (int i = 0; i < partonsUnused.size(); i++) {
-      std::cout<<partonsUnused[i].PDG()<< " ";
+      std::cout<<"Parton "<<partonsUnused[i].GetSerial()<<" with PDG code: "<<partonsUnused[i].PDG()<<" is left."<<std::endl;
     }
-    std::cout<<std::endl;
+  }
+  // 如果是CreateAnimation模式，那么递归结束
+  if(par::isCreateAnimation) {
+    std::cout<<"CreateAnimation mode is on, recursion ends."<<std::endl;
+    return;
+  }
+  // 是否通过输出参数直接关闭递归
+  if(par::isTurnOffRecursion && partonsUnused.size() > 0) {
+    std::cout<<"Recursion is turned off, recursion ends."<<std::endl;
+    return;
   }
 
-  bool isNeedRecursion = true;
-  if (nRecursionThisEvent > 5) {
-    // 如果递归超过5次，那么直接结束递归
-    isNeedRecursion = false;
-    if(par::isDebug) std::cout<<"Recursion times exceed 5, recursion ends."<<std::endl;
-  } else {
-    if (partonsUnused.size() == 0) {
-      // 如果没有没有被使用的parton，那么递归结束
-      isNeedRecursion = false;
-    } else if (partonsUnused.size() == 1) {
-      // 如果只有一个没有被使用的parton，那么递归结束
+  if (partonsUnused.size() == 2) {
+    // 如果只有两个个没有被使用的parton，可以尝试直接生成一个介子
+    float x, y, z, px, py, pz, t, d;
+    float x0, y0, z0, px0, py0, pz0, t0 = partonsUnused[0].Time();
+    float x1, y1, z1, px1, py1, pz1, t1 = partonsUnused[1].Time();
+    partonsUnused[0].GetPosition(x0, y0, z0);
+    partonsUnused[0].GetMomentum(px0, py0, pz0);
+    partonsUnused[1].GetPosition(x1, y1, z1);
+    partonsUnused[1].GetMomentum(px1, py1, pz1);
+    int pdg_lookup = LookupMesonSpecies(partonsUnused[0].PDG(), partonsUnused[1].PDG());
+    // 如果刚好能够形成一个介子, 而且可以通过DeriveHadronPxPyPz函数验证质量（已经包含了pdg组合验证和mass验证）, 那么打包成一个介子,递归结束
+    bool isMassValid = DeriveHadronPxPyPz(pdg_lookup, partonsUnused[0].PDG(), partonsUnused[1].PDG(), px, py, pz, px0, py0, pz0, px1, py1, pz1);
+    if (!isMassValid && par::isWriteCoalQA) nTrackRejectByMass++;
+    if(isMassValid) {
+      if (par::isWriteCoalQA) h_coal_dis_meson->Fill(d);
+      if(par::isDebug) std::cout<<"Two partons (No."<<partonsUnused[0].GetSerial()<<", No."<<partonsUnused[1].GetSerial()<<") left with PDG code: "<<partonsUnused[0].PDG()<<", "<<partonsUnused[1].PDG()<<std::endl;
+      d = distance3DMoveOn(x0, y0, z0, x1, y1, z1, px0, py0, pz0, px1, py1, pz1, t0, t1);
+      x = (x0 + x1) / 2, y = (y0 + y1) / 2, z = (z0 + z1) / 2;
+      t = t0 > t1 ? t0 : t1;
+      hadrons.emplace_back(nHadronSerial++, pdg_lookup, x, y, z, px, py, pz, t, d, partonsUnused[0].GetSerial(), partonsUnused[1].GetSerial(), 0);
       if(par::isDebug) {
-        std::cout<<"One parton with PDG code: "<<partonsUnused[0].PDG()<<" is left, recursion ends."<<std::endl;
+        hadrons.back().SetParton0Position(x0, y0, z0);
+        hadrons.back().SetParton1Position(x1, y1, z1);
       }
-      isNeedRecursion = false;
-    } else if (partonsUnused.size() == 2) {
-      // 如果只有两个个没有被使用的parton，那么递归结束
-      isNeedRecursion = false;
-      float x, y, z, px, py, pz, t, d;
-      float x0, y0, z0, px0, py0, pz0, t0 = partonsUnused[0].Time();
-      float x1, y1, z1, px1, py1, pz1, t1 = partonsUnused[1].Time();
-      partonsUnused[0].GetPosition(x0, y0, z0);
-      partonsUnused[0].GetMomentum(px0, py0, pz0);
-      partonsUnused[1].GetPosition(x1, y1, z1);
-      partonsUnused[1].GetMomentum(px1, py1, pz1);
-      int pdg_lookup = LookupMesonSpecies(partonsUnused[0].PDG(), partonsUnused[1].PDG());
-      // 如果刚好能够形成一个介子, 而且可以通过MassVarify函数验证质量（MassVarify已经包含了堆pdg的验证）, 那么打包成一个介子,递归结束
-      bool isMassValid = MassVarify(pdg_lookup, partonsUnused[0].PDG(), partonsUnused[1].PDG(), px, py, pz, px0, py0, pz0, px1, py1, pz1);
-      
-      if(isMassValid) {
-        if(par::isDebug) std::cout<<"Two partons (No."<<partonsUnused[0].GetSerial()<<", No."<<partonsUnused[1].GetSerial()<<") left with PDG code: "<<partonsUnused[0].PDG()<<", "<<partonsUnused[1].PDG()<<std::endl;
-        d = distance3DMoveOn(x0, y0, z0, x1, y1, z1, px0, py0, pz0, px1, py1, pz1, t0, t1);
-        x = (x0 + x1) / 2, y = (y0 + y1) / 2, z = (z0 + z1) / 2;
-        t = t0 > t1 ? t0 : t1;
-        hadrons.emplace_back(nHadronSerial++, pdg_lookup, x, y, z, px, py, pz, t, d, partonsUnused[0].GetSerial(), partonsUnused[1].GetSerial(), 0);
-        if(par::isDebug) {
-          hadrons.back().SetParton0Position(x0, y0, z0);
-          hadrons.back().SetParton1Position(x1, y1, z1);
-        }
-        if(par::isDebug) std::cout<<"------These two partons can form a meson: "<<pdg_lookup<<std::endl;
-        partonsUnused.clear();
-        if(par::isDebug) std::cout<<"------Used partons vector cleared."<<std::endl;
-      } else {
-        // 无法形成介子，递归结束
-        if(par::isDebug) {
-          std::cout<<"Two partons left with pdg code: "<<partonsUnused[0].PDG()<<", "<<partonsUnused[1].PDG()<<std::endl;
-          std::cout<<"------These two partons cannot form a meson."<<std::endl;
-        }
-      }
-    } else if (partonsUnused.size() == 3) {
-      // 如果只有三个个没有被使用的parton
-      float x, y, z, px, py, pz, t, d;
-      float x0, y0, z0, px0, py0, pz0, t0 = partonsUnused[0].Time();
-      float x1, y1, z1, px1, py1, pz1, t1 = partonsUnused[1].Time();
-      float x2, y2, z2, px2, py2, pz2, t2 = partonsUnused[2].Time();
-      partonsUnused[0].GetPosition(x0, y0, z0);
-      partonsUnused[0].GetMomentum(px0, py0, pz0);
-      partonsUnused[1].GetPosition(x1, y1, z1);
-      partonsUnused[1].GetMomentum(px1, py1, pz1);
-      partonsUnused[2].GetPosition(x2, y2, z2);
-      partonsUnused[2].GetMomentum(px2, py2, pz2);
-      // 如果刚好能够形成一个重子, 而且可以通过MassVarify函数验证质量（MassVarify已经包含了堆pdg的验证）, 那么打包成一个重子,递归结束
-      int pdg_lookup = LookupBaryonSpecies(partonsUnused[0].PDG(), partonsUnused[1].PDG(), partonsUnused[2].PDG());
-      bool isMassValid = MassVarify(pdg_lookup, partonsUnused[0].PDG(), partonsUnused[1].PDG(), partonsUnused[2].PDG(), px, py, pz, px0, py0, pz0, px1, py1, pz1, px2, py2, pz2);
-      if (isMassValid) {
-        if(par::isDebug) std::cout<<"Three partons (No."<<partonsUnused[0].GetSerial()<<", No."<<partonsUnused[1].GetSerial()<<", No."<<partonsUnused[2].GetSerial()<<") left with PDG code: "<<partonsUnused[0].PDG()<<", "<<partonsUnused[1].PDG()<<", "<<partonsUnused[2].PDG()<<std::endl;
-        d = perimeterMoveOn(x0, y0, z0, px0, py0, pz0, t0, x1, y1, z1, px1, py1, pz1, t1, x2, y2, z2, px2, py2, pz2, t2);
-        x = (x0 + x1 + x2) / 3, y = (y0 + y1 + y2) / 3, z = (z0 + z1 + z2) / 3;
-        t = (t0 > t1) ? ((t0 > t2) ? t0 : t2) : ((t1 > t2) ? t1 : t2);
-        hadrons.emplace_back(nHadronSerial++, pdg_lookup, x, y, z, px, py, pz, t, d, partonsUnused[0].GetSerial(), partonsUnused[1].GetSerial(), partonsUnused[2].GetSerial());
-        if(par::isDebug) {
-          hadrons.back().SetParton0Position(partonsUnused[0].X(), partonsUnused[0].Y(), partonsUnused[0].Z());
-          hadrons.back().SetParton1Position(partonsUnused[1].X(), partonsUnused[1].Y(), partonsUnused[1].Z());
-          hadrons.back().SetParton2Position(partonsUnused[2].X(), partonsUnused[2].Y(), partonsUnused[2].Z());
-        }
-        if(par::isDebug) std::cout<<"------These three partons can form a baryon: "<<pdg_lookup<<std::endl;
-        partonsUnused.clear();
-        if(par::isDebug) std::cout<<"------Used partons vector cleared."<<std::endl;
-        isNeedRecursion = false;
-      }
+      if(par::isDebug) std::cout<<"------These two partons can form a meson: "<<pdg_lookup<<std::endl;
+      partonsUnused.clear();
+      if(par::isDebug) std::cout<<"------Used partons vector cleared."<<std::endl;
     } else {
-      // 其他情况，需要递归
-      isNeedRecursion = true;
+      // 无法形成介子
+      if(par::isDebug) {
+        std::cout<<"Two partons left with pdg code: "<<partonsUnused[0].PDG()<<", "<<partonsUnused[1].PDG()<<std::endl;
+        std::cout<<"------These two partons cannot form a meson."<<std::endl;
+      }
     }
+  } else if (partonsUnused.size() == 3) {
+    // 如果只有三个个没有被使用的parton
+    float x, y, z, px, py, pz, t, d;
+    float x0, y0, z0, px0, py0, pz0, t0 = partonsUnused[0].Time();
+    float x1, y1, z1, px1, py1, pz1, t1 = partonsUnused[1].Time();
+    float x2, y2, z2, px2, py2, pz2, t2 = partonsUnused[2].Time();
+    partonsUnused[0].GetPosition(x0, y0, z0);
+    partonsUnused[0].GetMomentum(px0, py0, pz0);
+    partonsUnused[1].GetPosition(x1, y1, z1);
+    partonsUnused[1].GetMomentum(px1, py1, pz1);
+    partonsUnused[2].GetPosition(x2, y2, z2);
+    partonsUnused[2].GetMomentum(px2, py2, pz2);
+    // 如果刚好能够形成一个重子, 而且可以通过MassVarify函数验证质量（MassVarify已经包含了堆pdg的验证）, 那么打包成一个重子,递归结束
+    int pdg_lookup = LookupBaryonSpecies(partonsUnused[0].PDG(), partonsUnused[1].PDG(), partonsUnused[2].PDG());
+    bool isMassValid = DeriveHadronPxPyPz(pdg_lookup, partonsUnused[0].PDG(), partonsUnused[1].PDG(), partonsUnused[2].PDG(), px, py, pz, px0, py0, pz0, px1, py1, pz1, px2, py2, pz2);
+    if (!isMassValid && par::isWriteCoalQA) nTrackRejectByMass++;
+    if (isMassValid) {
+      if (par::isWriteCoalQA) h_coal_dis_baryon->Fill(d);
+      if(par::isDebug) std::cout<<"Three partons (No."<<partonsUnused[0].GetSerial()<<", No."<<partonsUnused[1].GetSerial()<<", No."<<partonsUnused[2].GetSerial()<<") left with PDG code: "<<partonsUnused[0].PDG()<<", "<<partonsUnused[1].PDG()<<", "<<partonsUnused[2].PDG()<<std::endl;
+      d = perimeterMoveOn(x0, y0, z0, px0, py0, pz0, t0, x1, y1, z1, px1, py1, pz1, t1, x2, y2, z2, px2, py2, pz2, t2);
+      x = (x0 + x1 + x2) / 3, y = (y0 + y1 + y2) / 3, z = (z0 + z1 + z2) / 3;
+      t = (t0 > t1) ? ((t0 > t2) ? t0 : t2) : ((t1 > t2) ? t1 : t2);
+      hadrons.emplace_back(nHadronSerial++, pdg_lookup, x, y, z, px, py, pz, t, d, partonsUnused[0].GetSerial(), partonsUnused[1].GetSerial(), partonsUnused[2].GetSerial());
+      if(par::isDebug) {
+        hadrons.back().SetParton0Position(partonsUnused[0].X(), partonsUnused[0].Y(), partonsUnused[0].Z());
+        hadrons.back().SetParton1Position(partonsUnused[1].X(), partonsUnused[1].Y(), partonsUnused[1].Z());
+        hadrons.back().SetParton2Position(partonsUnused[2].X(), partonsUnused[2].Y(), partonsUnused[2].Z());
+      }
+      if(par::isDebug) std::cout<<"------These three partons can form a baryon: "<<pdg_lookup<<std::endl;
+      partonsUnused.clear();
+      if(par::isDebug) std::cout<<"------Used partons vector cleared."<<std::endl;
+    }
+  }
+
+  bool isNeedRecursion = false;
+  partonsUnused.size() > 0 ? isNeedRecursion = true : isNeedRecursion = false;
+  if (nRecursionThisEvent > 3) {
+    // 如果递归超过3次，那么直接结束递归
+    isNeedRecursion = false;
+    if(par::isDebug) std::cout<<"Recursion times exceed 3, recursion ends."<<std::endl;
   }
 
   // 递归
@@ -755,25 +864,17 @@ void Coalescence::ProcessFromParton(std::vector<Parton> const &partons0, std::ve
   } else {
     if(par::isDebug) {
       std::cout<<"----------------------------------------"<<std::endl;
-      std::cout<<"Recursion ends."<<std::endl;
+      std::cout<<"No need for recursion again."<<std::endl;
       std::cout<<"Number of recursion in this event: "<<nRecursionThisEvent<<std::endl;
       std::cout<<"----------------------------------------"<<std::endl;
     }
-    // 如果最终partonsUnused大于0，说明递归结束后还有一些parton没有被使用
-    if (partonsUnused.size() > 0) {
-      if (par::isDebug) {
-        if (partonsUnused.size() > par::flavourBreakTolerance * nPartonsThisEvent) {
-          std::cerr<<"Error: "<<partonsUnused.size()<<" partons are left unused after recursion, which is more than "<<par::flavourBreakTolerance * 100. <<"% of the total partons."<<std::endl;
-          std::cerr<<"This event will be saved as empty."<<std::endl;
-          std::cerr<<"Clearing hadrons array."<<std::endl;
-          std::vector<Hadron>().swap(hadrons);
-        } else {
-          std::cout<<"Warning: "<<partonsUnused.size()<<" partons are left unused after recursion."<<std::endl;
-        }
-      }
+    if (partonsUnused.size() > par::flavourBreakTolerance * nPartonsThisEvent) {
+      std::cout<<"Error: "<<partonsUnused.size()<<" partons are left unused after recursion, which is more than "<<par::flavourBreakTolerance * 100. <<"% of the total partons."<<std::endl;
+      std::cout<<"This event will be saved as empty."<<std::endl;
+      std::cout<<"Clearing hadrons array."<<std::endl;
+      isRejectByFlavourTolerance = true;
+      std::vector<Hadron>().swap(hadrons);
     }
-    // 递归结束, Reset
-    ResetRecursionForNextEvent();
   }
 }
 
@@ -922,7 +1023,7 @@ void Coalescence::InitBaryonLookupTable() {
 }
 
 
-bool Coalescence::MassVarify(const int genPdg, const int pdg0, const int pdg1, float& genpx, float& genpy, float& genpz, const float px0, const float py0, const float pz0, const float px1, const float py1, const float pz1) {
+bool Coalescence::DeriveHadronPxPyPz(const int genPdg, const int pdg0, const int pdg1, float& genpx, float& genpy, float& genpz, const float px0, const float py0, const float pz0, const float px1, const float py1, const float pz1) {
   // 计算两个粒子的能量
   if (par::mass.find(genPdg) == par::mass.end() || par::mass.find(pdg0) == par::mass.end() || par::mass.find(pdg1) == par::mass.end()) return false;
   // 不做质量验证
@@ -952,7 +1053,7 @@ bool Coalescence::MassVarify(const int genPdg, const int pdg0, const int pdg1, f
   return true;
 }
 
-bool Coalescence::MassVarify(const int genPdg, const int pdg0, const int pdg1, const int pdg2, float& genpx, float& genpy, float& genpz, const float px0, const float py0, const float pz0, const float px1, const float py1, const float pz1, const float px2, const float py2, const float pz2) {
+bool Coalescence::DeriveHadronPxPyPz(const int genPdg, const int pdg0, const int pdg1, const int pdg2, float& genpx, float& genpy, float& genpz, const float px0, const float py0, const float pz0, const float px1, const float py1, const float pz1, const float px2, const float py2, const float pz2) {
   if (par::mass.find(genPdg) == par::mass.end() || par::mass.find(pdg0) == par::mass.end() || par::mass.find(pdg1) == par::mass.end() || par::mass.find(pdg2) == par::mass.end()) return false;
   //不做质量验证
   if (!par::isEnableMassVarify) {

@@ -29,7 +29,7 @@ class EventsReader {
     std::cout <<"--------------------------" << std::endl;
     std::cout << "EventsReader:" << std::endl;
     std::cout << "EventsReader with " << nEvents << " events" << std::endl;
-    std::cout <<"--------------------------" << std::endl;
+    std::cout <<"--------------------------" << std::endl << std::endl;
   }
 
   EventsReader(const EventsReader&) = delete;

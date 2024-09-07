@@ -7,7 +7,7 @@ void EventsWriter::Event2HadronEventStruct(const Event<Hadron>& event) {
   hadronEventStruct.Clear();
   //填充新的事件信息
   hadronEventStruct.nSeries = event.GetSerial();
-  hadronEventStruct.nTracks = event.GetNTrks();
+  hadronEventStruct.nTracks = event.GetParticles().size();
   std::vector<Hadron> particles = event.GetParticles();
   for (auto particle : particles) {
     hadronEventStruct.PDG.emplace_back(particle.PDG());

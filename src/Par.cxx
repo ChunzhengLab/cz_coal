@@ -1,30 +1,100 @@
-#include "Par.h"
-#include <map>
+#include <iostream>
+#include <string>
 #include <stdexcept>
+#include "Par.h"
+#include <boost/program_options.hpp> // 包含 Boost.Program_options 头文件
+
+namespace po = boost::program_options;
+
+// CoalescenceAlgorithm 输出流重载
+std::ostream& operator<<(std::ostream& os, const CoalescenceAlgorithm& algo) {
+    switch (algo) {
+        case CoalescenceAlgorithm::kClassic:
+            os << "kClassic";
+            break;
+        case CoalescenceAlgorithm::kFromParton:
+            os << "kFromParton";
+            break;
+        default:
+            throw std::runtime_error("Unknown CoalescenceAlgorithm");
+    }
+    return os;
+}
+
+// CoalescenceAlgorithm 输入流重载
+std::istream& operator>>(std::istream& is, CoalescenceAlgorithm& algo) {
+    std::string token;
+    is >> token;
+    if (token == "kClassic") {
+        algo = CoalescenceAlgorithm::kClassic;
+    } else if (token == "kFromParton") {
+        algo = CoalescenceAlgorithm::kFromParton;
+    } else {
+        throw std::runtime_error("Invalid CoalescenceAlgorithm value: " + token);
+    }
+    return is;
+}
+
+// EventType 输出流重载
+std::ostream& operator<<(std::ostream& os, const EventType& event) {
+    switch (event) {
+        case EventType::kAMPT:
+            os << "kAMPT";
+            break;
+        case EventType::kRandom:
+            os << "kRandom";
+            break;
+        default:
+            throw std::runtime_error("Unknown EventType");
+    }
+    return os;
+}
+
+// EventType 输入流重载
+std::istream& operator>>(std::istream& is, EventType& event) {
+    std::string token;
+    is >> token;
+    if (token == "kAMPT") {
+        event = EventType::kAMPT;
+    } else if (token == "kRandom") {
+        event = EventType::kRandom;
+    } else {
+        throw std::runtime_error("Invalid EventType value: " + token);
+    }
+    return is;
+}
 
 namespace par {
-  bool isDebug = true;
-  bool isLocalDraw = true;
-  bool isWriteEvents = true;
-  bool isCalculateObvs = true;
-  bool isRemoveHFQuarks = true;
-  bool isEnableMassVarify = true;
-  bool isEnableQuarkMoveOn = true;
-  bool isBalanceQuarkNumber = true;
+  // 全局变量的定义
+  bool isDebug = false;
+  bool isCreateAnimation = false;
+  bool isWriteCoalQA = false;
+  bool isWriteEvents = false;
+  bool isCalculateObvs = false;
+  bool isRemoveHFQuarks = false;
+  bool isEnableMassVarify = false;
+  bool isEnableQuarkMoveOn = false;
+  bool isBalanceQuarkNumber = false;
+  bool isTurnOffRecursion = false;
+
+  bool isResampleQuarkXY = false;
+  bool isPiesampleXY = false;
+  bool isRandomRotateQuarkXY = false;
+  bool isForgetZ = false;
+
+  bool isResampleQuarkPxPy = false;
+  bool isRandomRotateQuarkPxPy = false;
+  bool isPiesamplePxPy = false;
+
+  float r_bm = 1.0;
+  float flavourBreakTolerance = 0.0;
+  EventType eventType = EventType::kAMPT;
+  CoalescenceAlgorithm coalescenceAlgorithm = CoalescenceAlgorithm::kFromParton;
 
   std::string inputFile = "zpc-1.root";
   std::string outputFile = "output.root";
   std::string obvsFile = "obvs.root";
 
-  //事件类型
-  EventType eventType = EventType::kRandom;
-  //聚合算法
-  CoalescenceAlgorithm coalescenceAlgorithm = CoalescenceAlgorithm::kFromParton;
-  //r_bm的默认值
-  float r_bm = 1.0;
-  float flavourBreakTolerance = 0.;
-
-  //维护一个全局的随机数生成器
   std::random_device rd;
   std::mt19937 gen(rd());
   std::uniform_int_distribution<> zero_or_one(0, 1);
@@ -66,98 +136,117 @@ namespace par {
     {2112, 0.93957}, // n
     {-2112, 0.93957}, // 反n
 
-    {2224, 0}, // Δ^++
-    {-2224, 0}, // 反Δ^++
-    {2214, 0}, // Δ^+
-    {-2214, 0}, // 反Δ^+
-    {2114, 0}, // Δ^0
-    {-2114, 0}, // 反Δ^0
-    {1114, 0}, // Δ^-
-    {-1114, 0}, // 反Δ^-
+    {2224, 1.232}, // Δ^++
+    {-2224, 1.232}, // 反Δ^++
+    {2214, 1.232}, // Δ^+
+    {-2214, 1.232}, // 反Δ^+
+    {2114, 1.232}, // Δ^0
+    {-2114, 1.232}, // 反Δ^0
+    {1114, 1.232}, // Δ^-
+    {-1114, 1.232}, // 反Δ^-
 
 
-    {3122, 0}, // Λ^0
-    {-3122, 0}, // 反Λ^0
+    {3122, 1.11568}, // Λ^0
+    {-3122, 1.11568}, // 反Λ^0
 
-    {3222, 0}, // Σ^+
-    {-3222, 0}, // 反Σ^+
-    {3212, 0}, // Σ^0
-    {-3212, 0}, // 反Σ^0
-    {3112, 0}, // Σ^-
-    {-3112, 0}, // 反Σ^-
+    {3222, 1.18937}, // Σ^+
+    {-3222, 1.18937}, // 反Σ^+
+    {3212, 1.19255}, // Σ^0
+    {-3212, 1.19255}, // 反Σ^0
+    {3112, 1.19745}, // Σ^-
+    {-3112, 1.19745}, // 反Σ^-
 
-    {3322, 0}, // Ξ^0
-    {-3322, 0}, // 反Ξ^0
-    {3312, 0}, // Ξ^-
-    {-3312, 0}, // 反Ξ^+
+    {3322, 1.31486}, // Ξ^0
+    {-3322, 1.31486}, // 反Ξ^0
+    {3312, 1.32131}, // Ξ^-
+    {-3312, 1.32131}, // 反Ξ^+
 
-    {3334, 0}, // Ω^-
-    {-3334, 0}, // 反Ω^+
+    {3334, 1.67245}, // Ω^-
+    {-3334, 1.67245}, // 反Ω^+
   };
-}
 
-void parseConfig(const std::string& line) {
-  std::istringstream iss(line);
-  std::string key, value;
-  size_t eq_pos = line.find('=');
-  if (eq_pos == std::string::npos) {
-      throw std::runtime_error("Invalid configuration line: " + line);
+  // 实现 printConfig 函数
+  void printConfig() {
+    std::cout << "--------------------------" << std::endl;
+    std::cout << "Configuration: " << std::endl;
+    std::cout << "isDebug = " << isDebug << std::endl;
+    std::cout << "isCreateAnimation = " << isCreateAnimation << std::endl;
+    std::cout << "isWriteCoalQA = " << isWriteCoalQA << std::endl;
+    std::cout << "isWriteEvents = " << isWriteEvents << std::endl;
+    std::cout << "isCalculateObvs = " << isCalculateObvs << std::endl;
+    std::cout << "isRemoveHFQuarks = " << isRemoveHFQuarks << std::endl;
+    std::cout << "isEnableMassVarify = " << isEnableMassVarify << std::endl;
+    std::cout << "isEnableQuarkMoveOn = " << isEnableQuarkMoveOn << std::endl;
+    std::cout << "isBalanceQuarkNumber = " << isBalanceQuarkNumber << std::endl;
+    std::cout << "isResampleQuarkXY = " << isResampleQuarkXY << std::endl;
+    std::cout << "isRandomRotateQuarkXY = " << isRandomRotateQuarkXY << std::endl;
+    std::cout << "isPiesampleXY = " << isPiesampleXY << std::endl;
+    std::cout << "isResampleQuarkPxPy = " << isResampleQuarkPxPy << std::endl;
+    std::cout << "isRandomRotateQuarkPxPy = " << isRandomRotateQuarkPxPy << std::endl;
+    std::cout << "isPiesamplePxPy = " << isPiesamplePxPy << std::endl;
+    std::cout << "isTurnOffRecursion = " << isTurnOffRecursion << std::endl;
+    std::cout << "isForgetZ = " << isForgetZ << std::endl;
+    std::cout << "flavourBreakTolerance = " << flavourBreakTolerance << std::endl;
+    std::cout << "eventType = " << eventType << std::endl;
+    std::cout << "coalescenceAlgorithm = " << coalescenceAlgorithm << std::endl;
+    std::cout << "r_bm = " << r_bm << std::endl;
+    std::cout << "inputFile = " << inputFile << std::endl;
+    std::cout << "outputFile = " << outputFile << std::endl;
+    std::cout << "obvsFile = " << obvsFile << std::endl;
+    std::cout << "--------------------------" << std::endl << std::endl;
   }
-  key = line.substr(0, eq_pos);
-  value = line.substr(eq_pos + 1);
-  // 删除key和value周围的空格
-  key.erase(key.find_last_not_of(" \t\n\r\f\v") + 1);
-  value.erase(0, value.find_first_not_of(" \t\n\r\f\v"));
 
-  if (key == "isDebug") par::isDebug = (value == "true");
-  else if (key == "isLocalDraw") par::isLocalDraw = (value == "true");
-  else if (key == "isWriteEvents") par::isWriteEvents = (value == "true");
-  else if (key == "isCalculateObvs") par::isCalculateObvs = (value == "true");
-  else if (key == "isRemoveHFQuarks") par::isRemoveHFQuarks = (value == "true");
-  else if (key == "isEnableMassVarify") par::isEnableMassVarify = (value == "true");
-  else if (key == "isEnableQuarkMoveOn") par::isEnableQuarkMoveOn = (value == "true");
-  else if (key == "isBalanceQuarkNumber") par::isBalanceQuarkNumber = (value == "true");
-  else if (key == "eventType") {
-      if (value == "kAMPT") par::eventType = EventType::kAMPT;
-      else if (value == "kRandom") par::eventType = EventType::kRandom;
-      else throw std::runtime_error("Unknown event type: " + value);
+  // 实现 initConfig 函数，负责处理命令行和配置文件
+  void initConfig(int argc, char** argv) {
+    // 定义命令行和配置文件的选项
+    po::options_description config("Configuration options");
+    config.add_options()
+        ("isDebug", po::value<bool>(&isDebug)->default_value(false), "Enable debug mode")
+        ("isCreateAnimation", po::value<bool>(&isCreateAnimation)->default_value(false), "Enable local draw")
+        ("isWriteCoalQA", po::value<bool>(&isWriteCoalQA)->default_value(false), "Write coalescence QA")
+        ("isWriteEvents", po::value<bool>(&isWriteEvents)->default_value(false), "Write events")
+        ("isCalculateObvs", po::value<bool>(&isCalculateObvs)->default_value(false), "Calculate observables")
+        ("isRemoveHFQuarks", po::value<bool>(&isRemoveHFQuarks)->default_value(true), "Remove HF quarks")
+        ("isEnableMassVarify", po::value<bool>(&isEnableMassVarify)->default_value(false), "Enable mass verify")
+        ("isEnableQuarkMoveOn", po::value<bool>(&isEnableQuarkMoveOn)->default_value(false), "Enable quark move on")
+        ("isBalanceQuarkNumber", po::value<bool>(&isBalanceQuarkNumber)->default_value(false), "Balance quark number")
+        ("isResampleQuarkXY", po::value<bool>(&isResampleQuarkXY)->default_value(false), "Resample quark XY")
+        ("isPiesampleXY", po::value<bool>(&isPiesampleXY)->default_value(false), "Piesample XY")
+        ("isRandomRotateQuarkXY", po::value<bool>(&isRandomRotateQuarkXY)->default_value(false), "Randomly rotate quark XY")
+        ("isResampleQuarkPxPy", po::value<bool>(&isResampleQuarkPxPy)->default_value(false), "Resample quark PxPy")
+        ("isPiesamplePxPy", po::value<bool>(&isPiesamplePxPy)->default_value(false), "Piesample PxPy")
+        ("isRandomRotateQuarkPxPy", po::value<bool>(&isRandomRotateQuarkPxPy)->default_value(false), "Randomly rotate quark PxPy")
+        ("isTurnOffRecursion", po::value<bool>(&isTurnOffRecursion)->default_value(false), "Turn off recursion")
+        ("isForgetZ", po::value<bool>(&isForgetZ)->default_value(false), "Forget Z")
+        ("flavourBreakTolerance", po::value<float>(&flavourBreakTolerance)->default_value(0.0), "Set flavour break tolerance")
+        ("eventType", po::value<EventType>(&eventType)->default_value(EventType::kAMPT), "Set event type")
+        ("coalescenceAlgorithm", po::value<CoalescenceAlgorithm>(&coalescenceAlgorithm)->default_value(CoalescenceAlgorithm::kFromParton), "Set coalescence algorithm")
+        ("r_bm", po::value<float>(&r_bm)->default_value(0.1), "Set r_bm value")
+        ("inputFile", po::value<std::string>(&inputFile)->default_value("zpc-1.root"), "Input file")
+        ("outputFile", po::value<std::string>(&outputFile)->default_value("output.root"), "Output file")
+        ("obvsFile", po::value<std::string>(&obvsFile)->default_value("obvs.root"), "Observables file")
+        ("configFile", po::value<std::string>(), "configuration file");
+
+    po::variables_map vm;
+
+    // 解析命令行参数
+    po::store(po::parse_command_line(argc, argv, config), vm);
+
+    // 如果有配置文件，加载配置文件
+    if (vm.count("configFile")) {
+        std::ifstream ifs(vm["configFile"].as<std::string>());
+        if (ifs) {
+            po::store(po::parse_config_file(ifs, config), vm);
+        } else {
+            std::cerr << "Unable to open config file: " << vm["configFile"].as<std::string>() << std::endl;
+            exit(1);
+        }
+    }
+
+    // 应用命令行参数，覆盖配置文件中的设置
+    po::notify(vm);
+
+    // 打印最终的配置信息（可选）
+    printConfig();
   }
-  else if (key == "r_bm") par::r_bm = std::stof(value);
-  else if (key == "flavourBreakTolerance") par::flavourBreakTolerance = std::stof(value);
-  else if (key == "coalescenceAlgorithm") {
-      if (value == "kClassic") par::coalescenceAlgorithm = CoalescenceAlgorithm::kClassic;
-      else if (value == "kFromParton") par::coalescenceAlgorithm = CoalescenceAlgorithm::kFromParton;
-      else throw std::runtime_error("Unknown coalescence algorithm: " + value);
-  }
-  else if (key == "inputFile") par::inputFile = value;
-  else if (key == "outputFile") par::outputFile = value;
-  else if (key == "obvsFile") par::obvsFile = value;
-  else throw std::runtime_error("Unknown key: " + key);
-
-  // for (int i = 0; i < 10; ++i) {
-  //   int sample = par::zero_or_one(par::gen);
-  //   std::cout << sample << " ";
-  // }
-}
-
-void printConfig () {
-  std::cout <<"--------------------------" << std::endl;
-  std::cout << "Configuration: " << std::endl;
-  std::cout << "isDebug = " << par::isDebug << std::endl;
-  std::cout << "isLocalDraw = " << par::isLocalDraw << std::endl;
-  std::cout << "isWriteEvents = " << par::isWriteEvents << std::endl;
-  std::cout << "isCalculateObvs = " << par::isCalculateObvs << std::endl;
-  std::cout << "isRemoveHFQuarks = " << par::isRemoveHFQuarks << std::endl;
-  std::cout << "isEnableMassVarify = " << par::isEnableMassVarify << std::endl;
-  std::cout << "isEnableQuarkMoveOn = " << par::isEnableQuarkMoveOn << std::endl;
-  std::cout << "isBalanceQuarkNumber = " << par::isBalanceQuarkNumber << std::endl;
-  std::cout << "eventType = " << (par::eventType == EventType::kAMPT ? "kAMPT" : "kRandom") << std::endl;
-  std::cout << "r_bm = " << par::r_bm << std::endl;
-  std::cout << "flavourBreakTolerance = " << par::flavourBreakTolerance << std::endl;
-  std::cout << "coalescenceAlgorithm = " << (par::coalescenceAlgorithm == CoalescenceAlgorithm::kClassic ? "kClassic" : "kFromParton") << std::endl;
-  std::cout << "inputFile = " << par::inputFile << std::endl;
-  std::cout << "outputFile = " << par::outputFile << std::endl;
-  std::cout << "obvsFile = " << par::obvsFile << std::endl;
-  std::cout << "Configuration loaded successfully." << std::endl;
-  std::cout <<"--------------------------" << std::endl;
 }

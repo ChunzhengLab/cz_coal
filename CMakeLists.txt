@@ -13,6 +13,9 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Ofast")
 find_package(ROOT REQUIRED)
 include(${ROOT_USE_FILE})
 
+# 使用 Boost 模块，program_options
+find_package(Boost CONFIG REQUIRED COMPONENTS program_options)
+
 # 添加源文件和头文件的路径
 set(SOURCES
     src/main.cxx
@@ -30,7 +33,10 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/../bin)
 add_executable(Coalescence ${SOURCES})
 
 # 添加 include 目录到包含路径
-target_include_directories(Coalescence PRIVATE ${ROOT_INCLUDE_DIRS} ${CMAKE_SOURCE_DIR}/include)
+target_include_directories(Coalescence PRIVATE ${ROOT_INCLUDE_DIRS})
+target_include_directories(Coalescence PRIVATE ${CMAKE_SOURCE_DIR}/include)
+target_include_directories(Coalescence PRIVATE ${Boost_INCLUDE_DIRS})
 
-# 链接 ROOT 库
+# 链接库
 target_link_libraries(Coalescence PRIVATE ${ROOT_LIBRARIES})
+target_link_libraries(Coalescence PRIVATE ${Boost_LIBRARIES})

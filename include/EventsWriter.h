@@ -58,7 +58,7 @@ class EventsWriter {
       std::cout <<"--------------------------" << std::endl;
       std::cout << "EventsWriter:" << std::endl;
       std::cout << "EventsWriter with output file " << outputFile->GetName() << std::endl;
-      std::cout <<"--------------------------" << std::endl;
+      std::cout <<"--------------------------" << std::endl << std::endl;
     }
 };
 

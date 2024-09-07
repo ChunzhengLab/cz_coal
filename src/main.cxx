@@ -7,26 +7,8 @@
 
 
 int main(int argc, char** argv) {
-  if (argc != 2) {
-    std::cerr << "Usage: " << argv[0] << " <config-file>" << std::endl;
-    return 1;
-  }
-  std::ifstream configFile(argv[1]);
-  if (!configFile) {
-    std::cerr << "Unable to open config file: " << argv[1] << std::endl;
-    return 1;
-  }
-  std::string line;
-  while (std::getline(configFile, line)) {
-    try {
-      parseConfig(line);
-    } catch (const std::exception& e) {
-      std::cerr << e.what() << std::endl;
-      return 1;
-    }
-  }
-
-  printConfig();
+  // 初始化配置（包括命令行参数和配置文件）
+  par::initConfig(argc, argv);
 
   //如果inputfile无法打开，抛出异常
   try {
@@ -51,20 +33,33 @@ int main(int argc, char** argv) {
 
   int nEvents = reader.GetNEvents();
   nEvents = par::isDebug ? 30 : nEvents;
+  nEvents = par::isCreateAnimation ? 1 : nEvents;
+  std::cout << "Total number of events: " << nEvents << std::endl;
   if (par::isDebug) {
-    std::cout << "Total number of events: " << nEvents << std::endl;
-    std::cout << "For debug mode, only process the first 20 events" << std::endl;
+    std::cout << "For Debug Mode, only process the first 30 events" << std::endl;
+  }
+  if (par::isCreateAnimation) {
+    std::cout << "For local draw mode, only process the first event" << std::endl;
   }
 
-  std::cout << "Start processing events" << std::endl;
+  std::cout << std::endl << "Start processing events:" << std::endl;
+
   for (int iEvent = 0; iEvent < nEvents; ++iEvent) {
+
+    if (par::isDebug) {
+      std::cout << "========> Debug Mode >========" << std::endl;
+      std::cout << "Processing event " << iEvent << std::endl;
+    }
+
     // 进度条
     if (iEvent % 50 == 0) {
       std::cout << "Processing event " << iEvent << " / " << reader.GetNEvents() << std::endl;
     }
-    
+
     // 读取PartonEvent
     Event<Parton>& partonEvent = reader.GetEvent(iEvent);
+    // 根据输入参数清洗事件
+    partonEvent.wash();
 
     // 执行Coalescence
     std::vector<Hadron> hadrons;
@@ -80,7 +75,11 @@ int main(int argc, char** argv) {
 
     //写入HadronEvent
     if(par::isWriteEvents) {
-      writer.WriteEvent(Event<Hadron>(iEvent + 1, hadrons.size(), std::move(hadrons)));
+      writer.WriteEvent(Event<Hadron>(iEvent + 1, std::move(hadrons)));
+    }
+
+    if (par::isDebug) {
+      std::cout << "========< Debug Mode <========" << std::endl << std::endl; 
     }
   }
   std::cout << "All events processed" << std::endl;
