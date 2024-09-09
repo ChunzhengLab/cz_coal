@@ -501,6 +501,11 @@ void Coalescence::ProcessFromParton(std::vector<Parton> const &partons0, std::ve
 
       float d = distance3DMoveOn(x0_tmp, y0_tmp, z0_tmp, x1_tmp, y1_tmp, z1_tmp, px0, py0, pz0, px1, py1, pz1, t0, t1);
 
+      if (par::isRandomCoal) {
+        // d 随机取一个值
+        d = std::uniform_real_distribution<float>(0, 10)(par::gen);
+      }
+
       float d_meson = d; // 这里是为了下面的pi0的特殊处理
       float d_diquark = d;
 
@@ -607,7 +612,10 @@ void Coalescence::ProcessFromParton(std::vector<Parton> const &partons0, std::ve
         if (!isMassValid && par::isWriteCoalQA) nTrackRejectByMass++;
   
         float d_baryon = perimeterMoveOn(x0_tmp, y0_tmp, z0_tmp, x1_tmp, y1_tmp, z1_tmp, x2, y2, z2, px0, py0, pz0, px1, py1, pz1, px2, py2, pz2, t0, t1, t2);
-        d_baryon = d_baryon / 3.; // 周长的距离除以3，得到平均距离
+        d_baryon = d_baryon / 3.; // 除以3，因为是三个quark的平均距离
+        if (par::isRandomCoal) {
+          d_baryon = std::uniform_real_distribution<float>(0, 10)(par::gen);
+        }
 
         if (isMassValid && d_baryon < d_baryon_min) {
           d_baryon_min = d_baryon;
@@ -795,6 +803,9 @@ void Coalescence::ProcessFromParton(std::vector<Parton> const &partons0, std::ve
       if (par::isWriteCoalQA) h_coal_dis_meson->Fill(d);
       if(par::isDebug) std::cout<<"Two partons (No."<<partonsUnused[0].GetSerial()<<", No."<<partonsUnused[1].GetSerial()<<") left with PDG code: "<<partonsUnused[0].PDG()<<", "<<partonsUnused[1].PDG()<<std::endl;
       d = distance3DMoveOn(x0, y0, z0, x1, y1, z1, px0, py0, pz0, px1, py1, pz1, t0, t1);
+      if (par::isRandomCoal) {
+        d = std::uniform_real_distribution<float>(0, 10)(par::gen);
+      }
       x = (x0 + x1) / 2, y = (y0 + y1) / 2, z = (z0 + z1) / 2;
       t = t0 > t1 ? t0 : t1;
       hadrons.emplace_back(nHadronSerial++, pdg_lookup, x, y, z, px, py, pz, t, d, partonsUnused[0].GetSerial(), partonsUnused[1].GetSerial(), 0);
@@ -832,6 +843,10 @@ void Coalescence::ProcessFromParton(std::vector<Parton> const &partons0, std::ve
       if (par::isWriteCoalQA) h_coal_dis_baryon->Fill(d);
       if(par::isDebug) std::cout<<"Three partons (No."<<partonsUnused[0].GetSerial()<<", No."<<partonsUnused[1].GetSerial()<<", No."<<partonsUnused[2].GetSerial()<<") left with PDG code: "<<partonsUnused[0].PDG()<<", "<<partonsUnused[1].PDG()<<", "<<partonsUnused[2].PDG()<<std::endl;
       d = perimeterMoveOn(x0, y0, z0, px0, py0, pz0, t0, x1, y1, z1, px1, py1, pz1, t1, x2, y2, z2, px2, py2, pz2, t2);
+      d = d / 3.; // 除以3，因为是三个quark的平均距离
+      if (par::isRandomCoal) {
+        d = std::uniform_real_distribution<float>(0, 10)(par::gen);
+      }
       x = (x0 + x1 + x2) / 3, y = (y0 + y1 + y2) / 3, z = (z0 + z1 + z2) / 3;
       t = (t0 > t1) ? ((t0 > t2) ? t0 : t2) : ((t1 > t2) ? t1 : t2);
       hadrons.emplace_back(nHadronSerial++, pdg_lookup, x, y, z, px, py, pz, t, d, partonsUnused[0].GetSerial(), partonsUnused[1].GetSerial(), partonsUnused[2].GetSerial());

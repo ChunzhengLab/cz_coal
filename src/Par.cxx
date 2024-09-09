@@ -86,6 +86,8 @@ namespace par {
   bool isRandomRotateQuarkPxPy = false;
   bool isPiesamplePxPy = false;
 
+  bool isRandomCoal = false;
+
   float r_bm = 1.0;
   float flavourBreakTolerance = 0.0;
   EventType eventType = EventType::kAMPT;
@@ -186,6 +188,7 @@ namespace par {
     std::cout << "isPiesamplePxPy = " << isPiesamplePxPy << std::endl;
     std::cout << "isTurnOffRecursion = " << isTurnOffRecursion << std::endl;
     std::cout << "isForgetZ = " << isForgetZ << std::endl;
+    std::cout << "isRandomCoal = " << isRandomCoal << std::endl;
     std::cout << "flavourBreakTolerance = " << flavourBreakTolerance << std::endl;
     std::cout << "eventType = " << eventType << std::endl;
     std::cout << "coalescenceAlgorithm = " << coalescenceAlgorithm << std::endl;
@@ -218,6 +221,7 @@ namespace par {
         ("isRandomRotateQuarkPxPy", po::value<bool>(&isRandomRotateQuarkPxPy)->default_value(false), "Randomly rotate quark PxPy")
         ("isTurnOffRecursion", po::value<bool>(&isTurnOffRecursion)->default_value(false), "Turn off recursion")
         ("isForgetZ", po::value<bool>(&isForgetZ)->default_value(false), "Forget Z")
+        ("isRandomCoal", po::value<bool>(&isRandomCoal)->default_value(false), "Random coalescence")
         ("flavourBreakTolerance", po::value<float>(&flavourBreakTolerance)->default_value(0.0), "Set flavour break tolerance")
         ("eventType", po::value<EventType>(&eventType)->default_value(EventType::kAMPT), "Set event type")
         ("coalescenceAlgorithm", po::value<CoalescenceAlgorithm>(&coalescenceAlgorithm)->default_value(CoalescenceAlgorithm::kFromParton), "Set coalescence algorithm")

@@ -36,6 +36,8 @@ namespace par {
   extern bool isResampleQuarkPxPy;
   extern bool isPiesamplePxPy;
 
+  extern bool isRandomCoal;
+
   extern EventType eventType;
   extern float r_bm;
   extern float flavourBreakTolerance;
